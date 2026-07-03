@@ -52,11 +52,51 @@
     layoutCells();
   }
 
+  /* ---------- manual perspective projection (all 2D, exact hit-testing) ----------
+   * The board is drawn as a trapezoid: far rows are narrower and shorter,
+   * like the classic Battle Chess table. Cells are clip-path trapezoids
+   * (clip-path clips pointer hit-testing too), pieces scale with depth. */
+  var W_FAR = 0.70;   // top edge width as a fraction of the bottom edge
+  var ROW_G = 1.11;   // each row toward the viewer is 11% taller
+  var ROW_Y = (function () {
+    var h = [], sum = 0, i;
+    for (i = 0; i < 8; i++) { h.push(Math.pow(ROW_G, i)); sum += h[i]; }
+    var y = [0];
+    for (i = 0; i < 8; i++) y.push(y[i] + h[i] / sum * 100);
+    return y;
+  })();
+
+  function rowY(rf) { // rf in 0..8, fractional ok
+    var i = Math.max(0, Math.min(7, Math.floor(rf)));
+    return ROW_Y[i] + (rf - i) * (ROW_Y[i + 1] - ROW_Y[i]);
+  }
+  function lineW(y) { // board width fraction at height y (0=far,100=near)
+    return W_FAR + (1 - W_FAR) * y / 100;
+  }
+  function colX(cf, y) { // x% of a column center line at height y
+    return 50 + (cf - 4) * lineW(y) * 12.5;
+  }
+
   function layoutCells() {
     for (var i = 0; i < 64; i++) {
       var d = dispRC(i);
-      cells[i].style.left = (d.c * 12.5) + '%';
-      cells[i].style.top = (d.r * 12.5) + '%';
+      var yT = rowY(d.r), yB = rowY(d.r + 1);
+      var xTL = colX(d.c, yT), xTR = colX(d.c + 1, yT);
+      var xBL = colX(d.c, yB), xBR = colX(d.c + 1, yB);
+      var left = Math.min(xTL, xBL), right = Math.max(xTR, xBR);
+      var w = right - left, h = yB - yT;
+      var st = cells[i].style;
+      st.left = left + '%';
+      st.top = yT + '%';
+      st.width = w + '%';
+      st.height = h + '%';
+      var pts = [
+        ((xTL - left) / w * 100).toFixed(2) + '% 0%',
+        ((xTR - left) / w * 100).toFixed(2) + '% 0%',
+        ((xBR - left) / w * 100).toFixed(2) + '% 100%',
+        ((xBL - left) / w * 100).toFixed(2) + '% 100%'
+      ];
+      st.clipPath = 'polygon(' + pts.join(', ') + ')';
       cells[i].innerHTML = '';
       // coordinate labels on the display edges
       var name = Engine.sqName(i);
@@ -65,10 +105,23 @@
     }
   }
 
+  /* Piece box for (possibly fractional) display coords: feet on the tile. */
+  function placeAt(node, rf, cf) {
+    var yB = rowY(rf + 1);
+    var sq = lineW(yB) * 12.5;        // square width % at the feet line
+    var pw = sq * 1.30, ph = pw * 1.4; // svg viewBox is 100x140
+    var xC = colX(cf + 0.5, yB);
+    var st = node.style;
+    st.left = (xC - pw / 2) + '%';
+    st.top = (yB - ph + sq * 0.10) + '%';
+    st.width = pw + '%';
+    st.height = ph + '%';
+    st.zIndex = 10 + Math.round(rf * 2);
+  }
+
   function positionPiece(node, i) {
     var d = dispRC(i);
-    node.style.left = (d.c * 12.5) + '%';
-    node.style.top = (d.r * 12.5) + '%';
+    placeAt(node, d.r, d.c);
   }
 
   function renderPieces() {
@@ -78,8 +131,8 @@
       if (!p) continue;
       var node = el('div', 'piece', pieceLayer);
       node.dataset.i = i;
-      node.innerHTML = Characters.svg(p.type, p.color) +
-        '<span class="piece-badge badge-' + p.color + '">' + Characters.GLYPH[p.type] + '</span>';
+      node.innerHTML = '<div class="stand">' + Characters.svg(p.type, p.color) +
+        '<span class="piece-badge badge-' + p.color + '">' + Characters.GLYPH[p.type] + '</span></div>';
       node.querySelector('.body-root').style.animationDelay = (-(i % 7) * 0.3) + 's';
       positionPiece(node, i);
     }
@@ -228,6 +281,19 @@
     });
   }
 
+  /* Step to a spot just beside the victim, facing them. */
+  function slideBeside(node, from, victimSq) {
+    var a = dispRC(from), v = dispRC(victimSq);
+    var dc = a.c - v.c, dr = a.r - v.r;
+    var m = Math.max(Math.abs(dc), Math.abs(dr)) || 1;
+    node.classList.toggle('face-l', v.c < a.c);
+    return new Promise(function (res) {
+      placeAt(node, v.r + (dr / m) * 0.62, v.c + (dc / m) * 0.62);
+      node.style.zIndex = 12 + Math.round(v.r * 2); // in front of the victim
+      setTimeout(res, 340);
+    });
+  }
+
   function animateMove(move) {
     G.busy = true;
     clearMarks();
@@ -238,18 +304,22 @@
     var seq = Promise.resolve();
 
     Sound.play('move');
-    if (node) {
-      node.style.zIndex = 40;
-      seq = seq.then(function () { return slide(node, move.to); });
-    }
     if (move.castle) {
       var home = attacker.color === 'w' ? 7 : 0;
       var rookFrom = Engine.idx(home, move.castle === 'K' ? 7 : 0);
       var rookNode = pieceAt(rookFrom);
       if (rookNode) slide(rookNode, Engine.idx(home, move.castle === 'K' ? 5 : 3));
     }
-    if (victim) {
-      seq = seq.then(function () { return Battle.fight(attacker, victim); });
+    if (node) {
+      if (victim) {
+        var vicNode = pieceAt(victimSq);
+        seq = seq
+          .then(function () { return slideBeside(node, move.from, victimSq); })
+          .then(function () { return Battle.fightOnBoard(node, vicNode, attacker.type); })
+          .then(function () { return slide(node, move.to); });
+      } else {
+        seq = seq.then(function () { return slide(node, move.to); });
+      }
     }
     return seq.then(function () {
       if (victim) {

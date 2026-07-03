@@ -134,25 +134,43 @@ button { font-family: inherit; cursor: pointer; }
   max-width: 1000px; margin: 0 auto;
 }
 
-#board-wrap { position: relative; }
+#board-wrap {
+  position: relative;
+  padding: 4vmin 2vmin 2vmin;
+}
+#board-wrap::before { /* twilight glow behind the floating board */
+  content: ''; position: absolute; inset: -6% -16%; z-index: -1;
+  background: radial-gradient(80% 55% at 50% 22%, rgba(96, 78, 138, .35), transparent 70%);
+}
 #board {
   position: relative;
-  width: min(92vw, 64vh, 620px);
-  height: min(92vw, 64vh, 620px);
-  border-radius: 8px; overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0,0,0,.5), 0 0 0 6px #3a3125, 0 0 0 8px #241f17;
+  width: min(92vw, 66vh, 640px);
+  height: min(78vw, 56vh, 545px); /* squashed: we're looking across the table */
+}
+#board::before { /* stone plinth under the trapezoid playing field */
+  content: ''; position: absolute; inset: -1.5% -2.5% -3% -2.5%; z-index: 0;
+  background: linear-gradient(180deg, #4a4f5e, #2b2e38 60%, #191b22);
+  clip-path: polygon(13.2% 0%, 86.8% 0%, 101.5% 100%, -1.5% 100%);
+  filter: drop-shadow(0 22px 30px rgba(0,0,0,.55));
 }
 #board-cells, #board-pieces { position: absolute; inset: 0; }
 #board-pieces { pointer-events: none; } /* clicks land on the cells below */
+#board-wrap.shake { animation: shake .45s; }
 
-.cell { position: absolute; width: 12.5%; height: 12.5%; cursor: pointer; touch-action: manipulation; }
-.cell.light { background: var(--light-sq); }
-.cell.dark { background: var(--dark-sq); }
+.cell { position: absolute; cursor: pointer; touch-action: manipulation; }
+.cell.light {
+  background: linear-gradient(152deg, #c6cddc 0%, #a8b0c4 55%, #8d96ac 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), inset 0 -3px 8px rgba(20,22,34,.22);
+}
+.cell.dark {
+  background: linear-gradient(152deg, #94504e 0%, #713736 55%, #562828 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.07), inset 0 -3px 8px rgba(15,8,8,.35);
+}
 .coord { position: absolute; font-size: clamp(8px, 1.4vmin, 12px); font-weight: 700; opacity: .7; pointer-events: none; }
 .coord-f { right: 3px; bottom: 1px; }
 .coord-r { left: 3px; top: 1px; }
-.cell.light .coord { color: var(--dark-sq); }
-.cell.dark .coord { color: var(--light-sq); }
+.cell.light .coord { color: #562828; }
+.cell.dark .coord { color: #c6cddc; }
 
 .cell.sel { box-shadow: inset 0 0 0 4px var(--gold); }
 .cell.last { box-shadow: inset 0 0 0 100vmax rgba(246, 196, 69, .28); }
@@ -181,13 +199,20 @@ button { font-family: inherit; cursor: pointer; }
 @keyframes takePulse { 50% { transform: scale(1.08); } }
 
 .piece {
-  position: absolute; width: 12.5%; height: 12.5%;
-  transition: left .3s ease, top .3s ease;
+  position: absolute;
+  transition: left .34s ease, top .34s ease, width .34s ease, height .34s ease;
   pointer-events: none;
 }
-.piece svg { width: 100%; height: 100%; }
+.piece .stand {
+  position: absolute; inset: 0;
+  transition: transform .25s ease;
+  transform-origin: 50% 96%;
+}
+.piece.fighting .stand { transform: scale(1.12); }
+.piece.face-l .stand svg { transform: scaleX(-1); }
+.piece svg { width: 100%; height: 100%; overflow: visible; }
 .piece-badge {
-  position: absolute; top: 0; right: 4%;
+  position: absolute; top: 6%; right: 2%;
   font-size: clamp(9px, 2.1vmin, 16px); line-height: 1;
   opacity: .85; pointer-events: none;
   text-shadow: 0 1px 2px rgba(0,0,0,.8);
@@ -281,158 +306,79 @@ button { font-family: inherit; cursor: pointer; }
 .pz-check { font-size: 13px; color: var(--gold); }
 .puzzle-card.done .pz-check { color: #7ed36b; }
 
-/* ================= BATTLE SCENE ================= */
-#battle-layer { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
-.battle-overlay {
-  position: absolute; inset: 0; pointer-events: auto;
-  background: radial-gradient(120% 90% at 50% 100%, #3a2f4d 0%, #191527 60%, #0c0a14 100%);
-  opacity: 0; transition: opacity .25s;
-  display: flex; align-items: center; justify-content: center;
-}
-.battle-overlay.show { opacity: 1; }
-.battle-overlay.hide { opacity: 0; }
-
-.battle-arena {
-  position: relative; width: min(96vw, 860px); height: min(70vh, 480px);
-}
-.battle-arena.shake { animation: shake .45s; }
+/* ================= ON-BOARD BATTLES ================= */
 @keyframes shake {
   0%, 100% { transform: translate(0, 0); }
-  20% { transform: translate(-9px, 4px); }
-  40% { transform: translate(8px, -5px); }
-  60% { transform: translate(-6px, 3px); }
-  80% { transform: translate(5px, -2px); }
+  20% { transform: translate(-7px, 3px); }
+  40% { transform: translate(6px, -4px); }
+  60% { transform: translate(-5px, 2px); }
+  80% { transform: translate(4px, -2px); }
 }
-.battle-floor {
-  position: absolute; left: 6%; right: 6%; bottom: 6%; height: 22%;
-  background: radial-gradient(ellipse at center, #4c415f, #2a2338 70%, transparent 71%);
-  border-radius: 50%;
-}
-.battle-fx { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-
-.fighter {
-  position: absolute; bottom: 12%; width: clamp(130px, 30vmin, 230px);
-  transition: left .35s ease-in, right .35s ease-in;
-  z-index: 3;
-}
-.fighter svg { width: 100%; height: auto; overflow: visible; }
-.fighter.side-l { left: 10%; animation: enterL .5s ease-out backwards; }
-.fighter.side-r { right: 10%; animation: enterR .5s ease-out backwards; }
-.fighter.side-r svg { transform: scaleX(-1); }
-@keyframes enterL { from { left: -22%; } to { left: 10%; } }
-@keyframes enterR { from { right: -22%; } to { right: 10%; } }
-.fighter .body-root { animation: battleBob 1s ease-in-out infinite; }
-@keyframes battleBob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-.attacker.side-l.advance { left: 41%; }
-.attacker.side-r.advance { right: 41%; }
 
 /* weapon swing — rotation about the shoulder (svg user units) */
 .char .arm-weapon { transform-origin: 64px 50px; }
-.fighter.strike .arm-weapon { animation: swing .3s ease-in forwards; }
+.piece.strike .arm-weapon { animation: swing .3s ease-in forwards; }
 @keyframes swing {
   0% { transform: rotate(8deg); }
   35% { transform: rotate(38deg); }
   100% { transform: rotate(-118deg); }
 }
 
-.fighter.hit { animation: recoil .35s ease-out; }
-@keyframes recoil {
+.piece.hit svg { animation: hitFlash .4s ease-out; }
+@keyframes hitFlash {
   0% { filter: brightness(2.4) saturate(2); }
-  30% { transform: translateX(0) rotate(0); }
-  60% { transform: translateX(6%) rotate(6deg); filter: brightness(1.6); }
-  100% { transform: none; filter: none; }
-}
-.fighter.side-l.hit { animation-name: recoilL; }
-@keyframes recoilL {
-  0% { filter: brightness(2.4) saturate(2); }
-  60% { transform: translateX(-6%) rotate(-6deg); filter: brightness(1.6); }
-  100% { transform: none; filter: none; }
+  60% { filter: brightness(1.5); }
+  100% { filter: none; }
 }
 
-.fighter.dead { transition: none; }
-.fighter.dead svg { animation: fallOver .8s ease-in forwards; transform-origin: 50% 96%; }
-.fighter.side-r.dead svg { animation-name: fallOverR; }
-@keyframes fallOver {
-  0% { transform: rotate(0); }
-  55% { transform: rotate(84deg) translateY(0); }
-  70% { transform: rotate(78deg); }
-  100% { transform: rotate(84deg); opacity: .85; }
+.piece.dying { transition: none; }
+.piece.dying svg {
+  animation: boardFall 1s ease-in forwards;
+  transform-origin: 50% 94%;
 }
-@keyframes fallOverR {
-  0% { transform: scaleX(-1) rotate(0); }
-  55% { transform: scaleX(-1) rotate(84deg); }
-  70% { transform: scaleX(-1) rotate(78deg); }
-  100% { transform: scaleX(-1) rotate(84deg); opacity: .85; }
+@keyframes boardFall {
+  0% { transform: rotate(0); opacity: 1; }
+  50% { transform: rotate(84deg); opacity: 1; }
+  62% { transform: rotate(78deg); }
+  78% { transform: rotate(84deg); opacity: .95; }
+  100% { transform: rotate(84deg) translateY(4px); opacity: 0; }
 }
-.fighter.dead .body-root, .fighter.dead .arm-weapon { animation: none; }
+.piece.dying .body-root, .piece.dying .arm-weapon { animation: none; }
 .char.dead .eyes { display: none; }
 .char.dead .eyes-dead { display: block !important; }
 
-/* projectile for ranged attackers */
-.bolt {
-  position: absolute; width: 34px; height: 34px; border-radius: 50%;
-  background: radial-gradient(circle at 40% 40%, #fff8d0, var(--gold) 45%, rgba(246,196,69,0) 75%);
-  box-shadow: 0 0 24px 8px rgba(246, 196, 69, .7);
-  animation: boltL .38s linear forwards;
-}
-@keyframes boltL { from { left: 22%; } to { left: 66%; } }
-.bolt.rtl { animation-name: boltR; }
-@keyframes boltR { from { right: 22%; left: auto; } to { right: 66%; left: auto; } }
-
-.impact-flash {
-  position: absolute; inset: 0;
-  background: radial-gradient(circle at 50% 55%, rgba(255,255,255,.85), transparent 55%);
-  animation: flashOut .35s ease-out forwards;
-}
-@keyframes flashOut { from { opacity: 1; } to { opacity: 0; } }
-
-/* blood + sparks */
+/* blood & sparks burst inside the victim's stand */
 .blood-drop {
-  position: absolute; width: 13px; height: 13px; border-radius: 50% 50% 50% 0;
+  position: absolute; width: 9px; height: 9px; border-radius: 50% 50% 50% 0;
   background: radial-gradient(circle at 35% 35%, #e04040, #9c1616 70%);
   animation: partFly var(--t) ease-out forwards;
+  pointer-events: none;
 }
 .star-spark {
-  position: absolute; color: var(--gold); font-size: 22px;
-  text-shadow: 0 0 10px rgba(246,196,69,.9);
+  position: absolute; color: var(--gold); font-size: 15px;
+  text-shadow: 0 0 8px rgba(246,196,69,.9);
   animation: partFly var(--t) ease-out forwards;
+  pointer-events: none;
 }
 @keyframes partFly {
   0% { transform: translate(0, 0) scale(var(--s)); opacity: 1; }
   70% { opacity: 1; }
-  100% { transform: translate(var(--dx), calc(var(--dy) + 120px)) scale(calc(var(--s) * .6)) rotate(160deg); opacity: 0; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 60px)) scale(calc(var(--s) * .6)) rotate(160deg); opacity: 0; }
 }
-.blood-stain {
-  position: absolute; width: 46px; height: 20px; border-radius: 50%;
-  background: radial-gradient(ellipse at center, #8e1414 55%, #6d0e0e 75%, transparent 78%);
-  transform: rotate(var(--rot)) scale(var(--s));
-  opacity: 0; animation: stainIn .5s .25s ease-out forwards;
-}
-@keyframes stainIn { to { opacity: .8; } }
 
-.battle-banner {
-  position: absolute; top: 16%; left: 50%; z-index: 8;
+/* comic impact word above the fight */
+.board-banner {
+  position: absolute; top: -14%; left: 50%; z-index: 5;
   transform: translateX(-50%) scale(0); opacity: 0;
-  font-size: clamp(44px, 10vmin, 90px); font-weight: 900; letter-spacing: 2px;
-  color: var(--gold);
-  text-shadow: 4px 4px 0 #201505, -2px -2px 0 #201505, 2px -2px 0 #201505, -2px 2px 0 #201505, 0 0 30px rgba(0,0,0,.6);
+  font-size: clamp(15px, 3.4vmin, 30px); font-weight: 900; letter-spacing: 1px;
+  color: var(--gold); white-space: nowrap;
+  text-shadow: 2.5px 2.5px 0 #201505, -1.5px -1.5px 0 #201505, 1.5px -1.5px 0 #201505, -1.5px 1.5px 0 #201505;
+  animation: bannerPop .45s cubic-bezier(.2, 2.2, .4, 1) .05s forwards;
+  pointer-events: none;
 }
-.battle-banner.pop { animation: bannerPop .5s cubic-bezier(.2, 2.2, .4, 1) forwards; }
 @keyframes bannerPop {
   to { transform: translateX(-50%) scale(1) rotate(-5deg); opacity: 1; }
 }
-
-.battle-names {
-  position: absolute; top: 6%; left: 0; right: 0; text-align: center;
-  font-size: clamp(15px, 3vmin, 24px); font-weight: 800;
-}
-.bn.team-w { color: #7ea5ee; }
-.bn.team-b { color: #ee7e7e; }
-.bn-vs { color: var(--gold); margin: 0 14px; font-style: italic; }
 
 /* ================= modals ================= */
 #modal-layer { position: fixed; inset: 0; z-index: 100; pointer-events: none; }

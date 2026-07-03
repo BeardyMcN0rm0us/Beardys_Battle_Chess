@@ -1,12 +1,12 @@
-/* Beardy's Battle Chess — capture battle cutscenes.
- * When a piece takes a piece, the little people fight it out.
- * Gore mode ON: cartoon blood. Gore mode OFF: stars and sparks. */
+/* Beardy's Battle Chess — on-board capture battles.
+ * Battle Chess style: the attacker walks up to the defender's square and
+ * they fight right there on the board — weapon swing, impact, the loser
+ * topples and fades away. Gore ON: cartoon blood. Gore OFF: star sparks. */
 var Battle = (function () {
   'use strict';
 
   var GORE_WORDS = ['SPLAT!', 'CRUNCH!', 'KAPOW!', 'THWACK!', 'SQUISH!', 'CHOP!'];
   var SOFT_WORDS = ['BONK!', 'OOF!', 'WHAM!', 'POW!', 'BOOP!', 'ZONK!'];
-  var RANGED = { q: true, b: true }; // queen zaps, bishop casts
 
   function el(tag, cls, parent) {
     var d = document.createElement(tag);
@@ -22,112 +22,76 @@ var Battle = (function () {
     return on;
   }
 
-  function spawnParticles(fx, x, y, gore, big) {
-    var n = big ? 26 : 16;
+  /* Burst of blood drops (or star sparks) inside a piece's .stand box. */
+  function spawnParticles(box, gore, big) {
+    var n = big ? 18 : 10;
     for (var i = 0; i < n; i++) {
-      var p = el('div', gore ? 'blood-drop' : 'star-spark', fx);
+      var p = el('div', gore ? 'blood-drop' : 'star-spark', box);
       var ang = Math.random() * Math.PI * 2;
-      var dist = 30 + Math.random() * (big ? 170 : 110);
-      p.style.left = x + '%';
-      p.style.top = y + '%';
+      var dist = 12 + Math.random() * (big ? 70 : 42);
+      p.style.left = '50%';
+      p.style.top = '48%';
       p.style.setProperty('--dx', (Math.cos(ang) * dist) + 'px');
-      p.style.setProperty('--dy', (Math.sin(ang) * dist * 0.7 - 40) + 'px');
-      p.style.setProperty('--s', (0.5 + Math.random() * 1.1).toFixed(2));
-      p.style.setProperty('--t', (0.5 + Math.random() * 0.45).toFixed(2) + 's');
+      p.style.setProperty('--dy', (Math.sin(ang) * dist * 0.7 - 22) + 'px');
+      p.style.setProperty('--s', (0.35 + Math.random() * 0.6).toFixed(2));
+      p.style.setProperty('--t', (0.45 + Math.random() * 0.4).toFixed(2) + 's');
       if (!gore) p.textContent = ['✦', '✶', '★', '✺'][i % 4];
-    }
-    if (gore) {
-      for (var j = 0; j < (big ? 5 : 3); j++) {
-        var s = el('div', 'blood-stain', fx);
-        s.style.left = (x - 12 + Math.random() * 24) + '%';
-        s.style.top = (y + 18 + Math.random() * 14) + '%';
-        s.style.setProperty('--s', (0.7 + Math.random()).toFixed(2));
-        s.style.setProperty('--rot', Math.floor(Math.random() * 360) + 'deg');
-      }
     }
   }
 
-  /* Fight it out. attacker/victim: {type, color}. Resolves when done. */
-  function fight(attacker, victim) {
+  /* Fight on the square. attNode has already stepped up beside vicNode.
+   * Resolves when the victim is down; caller then moves onto the square. */
+  function fightOnBoard(attNode, vicNode, attackerType) {
     return new Promise(function (resolve) {
       var gore = goreOn();
-      var layer = document.getElementById('battle-layer');
-      layer.innerHTML = '';
-
-      var ov = el('div', 'battle-overlay', layer);
-      var arena = el('div', 'battle-arena', ov);
-      el('div', 'battle-floor', arena);
-      var fx = el('div', 'battle-fx', arena);
-
-      var atkLeft = attacker.color === 'w';
-      var atk = el('div', 'fighter attacker ' + (atkLeft ? 'side-l' : 'side-r'), arena);
-      atk.innerHTML = Characters.svg(attacker.type, attacker.color);
-      var vic = el('div', 'fighter victim ' + (atkLeft ? 'side-r' : 'side-l'), arena);
-      vic.innerHTML = Characters.svg(victim.type, victim.color);
-
-      var names = el('div', 'battle-names', ov);
-      names.innerHTML =
-        '<span class="bn team-' + attacker.color + '">' + Characters.FLAVOR[attacker.type] + '</span>' +
-        '<span class="bn-vs">VS</span>' +
-        '<span class="bn team-' + victim.color + '">' + Characters.FLAVOR[victim.type] + '</span>';
-
-      var banner = el('div', 'battle-banner', arena);
-      var words = gore ? GORE_WORDS : SOFT_WORDS;
-      banner.textContent = words[Math.floor(Math.random() * words.length)];
+      var stand = vicNode && vicNode.querySelector('.stand');
+      var wrap = document.getElementById('board-wrap');
+      if (attNode) attNode.classList.add('fighting');
+      if (vicNode) vicNode.classList.add('fighting');
 
       var timers = [];
-      var done = false;
-      function finish() {
-        if (done) return;
-        done = true;
-        timers.forEach(clearTimeout);
-        ov.classList.add('hide');
-        setTimeout(function () { layer.innerHTML = ''; resolve(); }, 260);
-      }
       function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
-      ov.addEventListener('pointerdown', finish); // tap to skip
 
-      requestAnimationFrame(function () { ov.classList.add('show'); });
-
-      var ranged = RANGED[attacker.type];
-      var victimX = atkLeft ? 72 : 28; // fx coordinates, % of arena
-
-      if (ranged) {
-        at(900, function () {
-          atk.classList.add('strike');
-          Sound.play('zap');
-          var bolt = el('div', 'bolt' + (atkLeft ? '' : ' rtl'), fx);
-          bolt.style.top = '52%';
-        });
-        at(1300, impact);
-      } else {
-        at(650, function () { atk.classList.add('advance'); });
-        at(1050, function () { atk.classList.add('strike'); Sound.play('swing'); });
-        at(1250, impact);
-      }
-
-      function impact() {
-        Sound.play('hit');
-        if (gore) Sound.play('squelch');
-        arena.classList.add('shake');
-        el('div', 'impact-flash', fx);
-        vic.classList.add('hit');
-        spawnParticles(fx, victimX, 46, gore, false);
-      }
-
-      at(1800, function () {
-        vic.classList.add('dead');
-        vic.querySelector('svg').classList.add('dead');
-        Sound.play('ko');
-        spawnParticles(fx, victimX, 60, gore, true);
-        banner.classList.add('pop');
+      at(220, function () {
+        if (attNode) attNode.classList.add('strike');
+        Sound.play(attackerType === 'q' ? 'zap' : 'swing');
       });
 
-      at(2750, finish);
+      at(500, function () {
+        Sound.play('hit');
+        if (gore) Sound.play('squelch');
+        if (wrap) {
+          wrap.classList.add('shake');
+          setTimeout(function () { wrap.classList.remove('shake'); }, 500);
+        }
+        if (vicNode) vicNode.classList.add('hit');
+        if (stand) {
+          spawnParticles(stand, gore, false);
+          var words = gore ? GORE_WORDS : SOFT_WORDS;
+          var b = el('div', 'board-banner', stand);
+          b.textContent = words[Math.floor(Math.random() * words.length)];
+        }
+      });
+
+      at(880, function () {
+        Sound.play('ko');
+        if (vicNode) {
+          vicNode.classList.add('dying');
+          var svg = vicNode.querySelector('svg');
+          if (svg) svg.classList.add('dead');
+        }
+        if (stand) spawnParticles(stand, gore, true);
+      });
+
+      at(1800, function () {
+        if (attNode) attNode.classList.remove('strike', 'fighting');
+        if (vicNode) vicNode.remove();
+        resolve();
+      });
     });
   }
 
-  /* Tiny board-level splat that stays on the square after a capture. */
+  /* Blood stain that stays on the square after a capture. */
   function squareSplat(cellEl) {
     if (!goreOn()) return;
     var s = document.createElement('div');
@@ -137,5 +101,5 @@ var Battle = (function () {
     cellEl.appendChild(s);
   }
 
-  return { fight: fight, squareSplat: squareSplat, goreOn: goreOn, toggleGore: toggleGore };
+  return { fightOnBoard: fightOnBoard, squareSplat: squareSplat, goreOn: goreOn, toggleGore: toggleGore };
 })();
