@@ -78,7 +78,8 @@
       if (!p) continue;
       var node = el('div', 'piece', pieceLayer);
       node.dataset.i = i;
-      node.innerHTML = Characters.svg(p.type, p.color);
+      node.innerHTML = Characters.svg(p.type, p.color) +
+        '<span class="piece-badge badge-' + p.color + '">' + Characters.GLYPH[p.type] + '</span>';
       node.querySelector('.body-root').style.animationDelay = (-(i % 7) * 0.3) + 's';
       positionPiece(node, i);
     }
@@ -182,6 +183,9 @@
     G.targets = legalFor(i);
     if (!G.targets.length) { G.selected = null; return; }
     Sound.play('select');
+    var sp = G.state.board[i];
+    setStatus('<b>' + Characters.NAMES[sp.type] + '</b> \u2014 ' +
+      Characters.MOVES_HINT[sp.type] + ' \u00b7 tap a gold dot to move, a red ring to attack');
     cells[i].classList.add('sel');
     G.targets.forEach(function (m) {
       cells[m.to].classList.add(m.captured ? 'take' : 'move');
@@ -192,6 +196,8 @@
     G.selected = null;
     G.targets = [];
     clearMarks();
+    markCheck();
+    updateHud();
     markCheck();
   }
 
@@ -633,6 +639,7 @@
   /* ---------- boot ---------- */
 
   document.addEventListener('DOMContentLoaded', function () {
+    document.body.insertAdjacentHTML('afterbegin', Characters.defs());
     buildBoard();
     wireUp();
     show('screen-menu');

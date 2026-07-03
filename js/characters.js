@@ -1,214 +1,331 @@
-/* Beardy's Battle Chess — SVG character builder.
- * Every piece is a little person with a weapon. Groups are classed
- * (.arm-weapon, .head, .body-root, .eyes/.eyes-dead) so CSS can animate them. */
+/* Beardy's Battle Chess — character art.
+ * Realistic-styled medieval figures rendered as layered SVG with shared
+ * gradient materials (steel, gold, leather, cloth). Groups are classed
+ * (.body-root, .arm-weapon, .head, .eyes/.eyes-dead) so CSS can animate
+ * idle bobbing, weapon swings and knock-outs.
+ * Characters.defs() must be injected into the document once at boot. */
 var Characters = (function () {
   'use strict';
 
+  /* ---------- shared materials (document-wide <defs>) ---------- */
+
+  function grad(id, stops, x2, y2) {
+    return '<linearGradient id="' + id + '" x1="0" y1="0" x2="' + (x2 || 0) + '" y2="' + (y2 == null ? 1 : y2) + '">' +
+      stops.map(function (s) {
+        return '<stop offset="' + s[0] + '" stop-color="' + s[1] + '"/>';
+      }).join('') + '</linearGradient>';
+  }
+
+  function defs() {
+    return '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>' +
+      grad('bbcSteel', [[0, '#eef1f6'], [0.5, '#aeb6c4'], [1, '#6a7280']]) +
+      grad('bbcSteelH', [[0, '#f6f8fb'], [0.55, '#c2c9d5'], [1, '#8b93a2']], 1, 0.3) +
+      grad('bbcIron', [[0, '#7d828e'], [0.55, '#4e525c'], [1, '#2e3138']]) +
+      grad('bbcGold', [[0, '#f6dd8c'], [0.5, '#cba22a'], [1, '#8a6d14']]) +
+      grad('bbcLeather', [[0, '#96714b'], [0.55, '#64492f'], [1, '#40301e']]) +
+      grad('bbcWood', [[0, '#8a663d'], [1, '#54401f']], 1, 0) +
+      grad('bbcBlade', [[0, '#f4f6fa'], [0.5, '#c3cad6'], [1, '#8b93a2']], 1, 0) +
+      grad('bbcSkin', [[0, '#ecc9a3'], [1, '#cfa075']]) +
+      grad('bbcFabW', [[0, '#4d74bd'], [0.55, '#2d4a7d'], [1, '#1a2c4e']]) +
+      grad('bbcFabB', [[0, '#b64d4d'], [0.55, '#7d2d2d'], [1, '#4e1a1a']]) +
+      grad('bbcRobe', [[0, '#efe9dc'], [0.6, '#cfc6b2'], [1, '#a2977f']]) +
+      grad('bbcFur', [[0, '#f4f1ea'], [1, '#c9c2b4']]) +
+      '</defs></svg>';
+  }
+
+  var ST = ' stroke="#15161c" stroke-width="0.8" stroke-opacity="0.5"';
+
   var TEAM = {
-    w: { // Blue Knights
-      main: '#3567c9', main2: '#274e9c', trim: '#f6c445', trim2: '#c99a1f',
-      skin: '#f6c9a0', metal: '#c8d2e0', metal2: '#8fa0b8', cloth: '#e9eef7'
-    },
-    b: { // Red Raiders
-      main: '#c03a3a', main2: '#8e2626', trim: '#f2a93b', trim2: '#b87716',
-      skin: '#e8b183', metal: '#b9b3c4', metal2: '#7d7590', cloth: '#3c2f45'
-    }
+    w: { fab: 'url(#bbcFabW)', edge: '#1a2c4e', plume: '#4d74bd', jewel: '#3f79d8',
+         glyphColor: '#9db8e8', hair: '#6b5236', beard: '#d9d2c4' },
+    b: { fab: 'url(#bbcFabB)', edge: '#4e1a1a', plume: '#b64d4d', jewel: '#d33f4c',
+         glyphColor: '#e89d9d', hair: '#3a2a1c', beard: '#5a4a38' }
   };
 
+  /* ---------- shared body parts (viewBox 0 0 100 140, ground y≈132) ---------- */
+
   function face(t, opts) {
-    var beard = opts && opts.beard;
+    opts = opts || {};
     var s = '';
+    var ey = opts.eyeY || 25;
     s += '<g class="eyes">' +
-      '<circle cx="43" cy="38" r="2.6" fill="#2b2530"/>' +
-      '<circle cx="57" cy="38" r="2.6" fill="#2b2530"/>' +
-      '<circle cx="44" cy="37" r="0.9" fill="#fff"/>' +
-      '<circle cx="58" cy="37" r="0.9" fill="#fff"/>' +
-      '<path d="M45 47 Q50 51 55 47" stroke="#2b2530" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="46.4" cy="' + ey + '" rx="1.5" ry="1.9" fill="#221d18"/>' +
+      '<ellipse cx="53.6" cy="' + ey + '" rx="1.5" ry="1.9" fill="#221d18"/>' +
+      '<circle cx="46.9" cy="' + (ey - 0.6) + '" r="0.5" fill="#fff" opacity="0.8"/>' +
+      '<circle cx="54.1" cy="' + (ey - 0.6) + '" r="0.5" fill="#fff" opacity="0.8"/>' +
       '</g>';
     s += '<g class="eyes-dead" style="display:none">' +
-      '<path d="M40 35 l6 6 M46 35 l-6 6" stroke="#2b2530" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<path d="M54 35 l6 6 M60 35 l-6 6" stroke="#2b2530" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<ellipse cx="50" cy="48" rx="3.5" ry="2.5" fill="#2b2530"/>' +
+      '<path d="M44.2 ' + (ey - 2) + ' l4.4 4 M48.6 ' + (ey - 2) + ' l-4.4 4" stroke="#221d18" stroke-width="1.5" stroke-linecap="round"/>' +
+      '<path d="M51.4 ' + (ey - 2) + ' l4.4 4 M55.8 ' + (ey - 2) + ' l-4.4 4" stroke="#221d18" stroke-width="1.5" stroke-linecap="round"/>' +
       '</g>';
-    s += '<circle cx="38" cy="44" r="3" fill="#e88" opacity="0.45"/>' +
-         '<circle cx="62" cy="44" r="3" fill="#e88" opacity="0.45"/>';
-    if (beard) {
-      s += '<path d="M36 42 Q36 62 50 64 Q64 62 64 42 Q60 50 50 50 Q40 50 36 42 Z" fill="' + beard + '"/>' +
-           '<path d="M44 52 Q50 56 56 52" stroke="' + beard + '" stroke-width="2" fill="none"/>';
+    if (!opts.noNose) {
+      s += '<path d="M50 ' + (ey + 1) + ' q1 2 0 3.4" stroke="#b78a5f" stroke-width="1" fill="none" stroke-linecap="round"/>';
+    }
+    if (!opts.noMouth) {
+      s += '<path d="M47.4 ' + (ey + 7) + ' h5.2" stroke="#8a5d3d" stroke-width="1.1" stroke-linecap="round"/>';
     }
     return s;
   }
 
-  function head(t, inner, opts) {
-    return '<g class="head">' +
-      '<circle cx="50" cy="40" r="19" fill="' + t.skin + '"/>' +
-      face(t, opts) + (inner || '') + '</g>';
+  function headBase(t) {
+    return '<circle cx="50" cy="25" r="9.2" fill="url(#bbcSkin)"' + ST + '/>' +
+      '<path d="M41.5 22 Q50 17.5 58.5 22" stroke="#c2926a" stroke-width="0.8" fill="none" opacity="0.6"/>';
   }
 
-  function legs(t, boots) {
+  function neck() {
+    return '<rect x="46.8" y="32" width="6.4" height="6" fill="url(#bbcSkin)"/>';
+  }
+
+  function boots(kind) {
+    var fill = kind === 'steel' ? 'url(#bbcSteel)' : 'url(#bbcLeather)';
+    return '<path d="M40 122 l-3.5 7 q-0.5 2 2 2 l8 0 l0.5 -9 Z" fill="' + fill + '"' + ST + '/>' +
+      '<path d="M60 122 l3.5 7 q0.5 2 -2 2 l-8 0 l-0.5 -9 Z" fill="' + fill + '"' + ST + '/>';
+  }
+
+  function legs(t, kind) {
+    var fill = kind === 'steel' ? 'url(#bbcSteel)' : kind === 'iron' ? 'url(#bbcIron)' : t.fab;
+    var wide = kind === 'iron';
+    var lw = wide ? 8.5 : 6.5;
     return '<g class="legs">' +
-      '<rect x="39" y="98" width="9" height="22" rx="4" fill="' + t.main2 + '"/>' +
-      '<rect x="52" y="98" width="9" height="22" rx="4" fill="' + t.main2 + '"/>' +
-      '<ellipse cx="43" cy="121" rx="7" ry="4.5" fill="' + (boots || '#4a3628') + '"/>' +
-      '<ellipse cx="57" cy="121" rx="7" ry="4.5" fill="' + (boots || '#4a3628') + '"/>' +
+      '<rect x="' + (46 - lw) + '" y="84" width="' + lw + '" height="40" rx="3" fill="' + fill + '"' + ST + '/>' +
+      '<rect x="54" y="84" width="' + lw + '" height="40" rx="3" fill="' + fill + '"' + ST + '/>' +
+      (kind === 'steel' || kind === 'iron'
+        ? '<path d="M40 103 h12 M54 103 h12" stroke="#3a3e46" stroke-width="1" opacity="0.7"/>' : '') +
+      boots(kind === 'steel' || kind === 'iron' ? 'steel' : 'leather') +
       '</g>';
   }
 
-  function torso(t, fill, extra) {
-    return '<g class="torso">' +
-      '<path d="M36 66 Q34 78 36 96 Q37 104 50 104 Q63 104 64 96 Q66 78 64 66 Q57 60 50 60 Q43 60 36 66 Z" fill="' + fill + '"/>' +
-      (extra || '') + '</g>';
-  }
-
-  function backArm(t, fill) {
+  function backArm(fill, hx, hy) {
+    hx = hx || 31; hy = hy || 77;
     return '<g class="arm-back">' +
-      '<rect x="28" y="64" width="10" height="26" rx="5" fill="' + fill + '"/>' +
-      '<circle cx="33" cy="91" r="5.5" fill="' + t.skin + '"/>' +
+      '<path d="M37 48 Q30 60 ' + hx + ' ' + (hy - 3) + ' l6 2 Q38 62 43 50 Z" fill="' + fill + '"' + ST + '/>' +
+      '<circle cx="' + (hx + 1.5) + '" cy="' + hy + '" r="3.6" fill="url(#bbcSkin)"' + ST + '/>' +
       '</g>';
   }
 
-  /* Weapon arm anchored at the right shoulder (63,66). `weapon` draws pointing up. */
-  function weaponArm(t, fill, weapon) {
+  /* Weapon arm: shoulder at (63,48), hand at (hx,hy). CSS rotates about 64px 50px. */
+  function weaponArm(fill, weapon, hx, hy) {
+    hx = hx || 69; hy = hy || 76;
     return '<g class="arm-weapon">' +
-      '<rect x="61" y="62" width="10" height="26" rx="5" fill="' + fill + '"/>' +
-      '<circle cx="66" cy="87" r="6" fill="' + t.skin + '"/>' +
-      weapon + '</g>';
+      '<path d="M63 46 Q72 58 ' + (hx + 1) + ' ' + (hy - 4) + ' l-6 3 Q64 60 58 49 Z" fill="' + fill + '"' + ST + '/>' +
+      weapon +
+      '<circle cx="' + hx + '" cy="' + hy + '" r="3.9" fill="url(#bbcSkin)"' + ST + '/>' +
+      '</g>';
   }
+
+  /* ---------- weapons (held vertical, hand ~ (69,76)) ---------- */
 
   var WEAPONS = {
-    pitchfork: function (t) {
-      return '<g class="weapon">' +
-        '<rect x="64.5" y="18" width="3.5" height="72" rx="1.5" fill="#8a5a2e"/>' +
-        '<path d="M58 22 v-12 M66.2 22 v-16 M74.5 22 v-12" stroke="' + t.metal2 + '" stroke-width="3.4" stroke-linecap="round"/>' +
-        '<rect x="56" y="19" width="20.5" height="4" rx="2" fill="' + t.metal2 + '"/>' +
-        '</g>';
+    spear: function () {
+      return '<rect x="67.6" y="14" width="2.8" height="76" rx="1.2" fill="url(#bbcWood)"' + ST + '/>' +
+        '<path d="M69 2 q4 6 0 13 q-4 -7 0 -13 Z" fill="url(#bbcBlade)"' + ST + '/>' +
+        '<rect x="65.5" y="14.5" width="7" height="2.2" rx="1" fill="url(#bbcIron)"/>';
     },
-    mace: function (t) {
-      return '<g class="weapon">' +
-        '<rect x="64.5" y="34" width="4" height="56" rx="2" fill="#6b4a26"/>' +
-        '<circle cx="66.5" cy="26" r="11" fill="' + t.metal2 + '"/>' +
-        '<circle cx="66.5" cy="26" r="6" fill="' + t.metal + '"/>' +
-        '<path d="M66.5 11 v6 M66.5 35 v6 M52 26 h6 M75 26 h6 M56 16 l4.5 4.5 M77 37 l-4.5 -4.5 M77 16 l-4.5 4.5 M56 37 l4.5 -4.5" stroke="' + t.metal2 + '" stroke-width="3" stroke-linecap="round"/>' +
-        '</g>';
+    mace: function () {
+      var flanges = '';
+      for (var a = 0; a < 360; a += 60) {
+        flanges += '<path transform="rotate(' + a + ' 69 22)" d="M69 22 L65.6 12.5 Q69 10 72.4 12.5 Z" fill="url(#bbcIron)"' + ST + '/>';
+      }
+      return '<rect x="67.5" y="28" width="3" height="60" rx="1.4" fill="url(#bbcWood)"' + ST + '/>' +
+        flanges +
+        '<circle cx="69" cy="22" r="5.4" fill="url(#bbcSteel)"' + ST + '/>';
     },
-    club: function (t) {
-      return '<g class="weapon">' +
-        '<path d="M63 90 L61 34 Q61 20 68 20 Q75 20 75 34 L71 90 Z" fill="#7d7568"/>' +
-        '<circle cx="64" cy="30" r="2" fill="#5c554b"/><circle cx="71" cy="42" r="2" fill="#5c554b"/><circle cx="66" cy="55" r="2" fill="#5c554b"/>' +
-        '</g>';
+    hammer: function () {
+      return '<rect x="67" y="26" width="4" height="64" rx="1.8" fill="url(#bbcWood)"' + ST + '/>' +
+        '<rect x="58" y="12" width="22" height="13" rx="2.5" fill="url(#bbcIron)"' + ST + '/>' +
+        '<rect x="58" y="12" width="22" height="4" rx="2" fill="url(#bbcSteelH)" opacity="0.55"/>' +
+        '<path d="M80 15 l8 3.5 l-8 3.5 Z" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<circle cx="62" cy="18.5" r="1" fill="#2e3138"/><circle cx="75" cy="18.5" r="1" fill="#2e3138"/>';
     },
-    staff: function (t) {
-      return '<g class="weapon">' +
-        '<rect x="64.5" y="24" width="4" height="66" rx="2" fill="' + t.trim2 + '"/>' +
-        '<circle cx="66.5" cy="18" r="8.5" fill="' + t.trim + '"/>' +
-        '<circle cx="64" cy="15.5" r="3" fill="#fff" opacity="0.7"/>' +
-        '<path d="M66.5 4 v5 M56 18 h5 M72 18 h5" stroke="' + t.trim + '" stroke-width="2.5" stroke-linecap="round"/>' +
-        '</g>';
+    crozier: function () {
+      return '<rect x="67.8" y="18" width="2.6" height="74" rx="1.2" fill="url(#bbcGold)"' + ST + '/>' +
+        '<path d="M69 18 C69 8 82 8 82 16 C82 22 76 23 74 20" stroke="url(#bbcGold)" stroke-width="3.2" fill="none" stroke-linecap="round"/>' +
+        '<circle cx="74" cy="20" r="1.8" fill="url(#bbcGold)"/>';
     },
     scepter: function (t) {
-      return '<g class="weapon">' +
-        '<rect x="64.8" y="30" width="3.4" height="60" rx="1.7" fill="' + t.trim2 + '"/>' +
-        '<path d="M66.5 8 L71 19 L82 20 L73.5 27 L76 38 L66.5 32 L57 38 L59.5 27 L51 20 L62 19 Z" fill="' + t.trim + '" stroke="' + t.trim2 + '" stroke-width="1.5"/>' +
-        '</g>';
+      return '<rect x="68" y="26" width="2.2" height="54" rx="1" fill="url(#bbcGold)"' + ST + '/>' +
+        '<path d="M65 26 q4 3 8 0 l-1.5 -5 l-5 0 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<circle cx="69" cy="16.5" r="5" fill="' + t.jewel + '"' + ST + '/>' +
+        '<circle cx="67.4" cy="14.8" r="1.5" fill="#fff" opacity="0.55"/>' +
+        '<path d="M69 9 v5 M66.5 11.5 h5" stroke="url(#bbcGold)" stroke-width="1.8" stroke-linecap="round"/>';
     },
-    sword: function (t) {
-      return '<g class="weapon">' +
-        '<path d="M64.5 78 L64.5 18 L66.5 10 L68.5 18 L68.5 78 Z" fill="' + t.metal + '" stroke="' + t.metal2 + '" stroke-width="1"/>' +
-        '<rect x="56" y="76" width="21" height="5" rx="2.5" fill="' + t.trim2 + '"/>' +
-        '<rect x="64" y="81" width="5" height="9" rx="2" fill="#6b4a26"/>' +
-        '<circle cx="66.5" cy="92" r="3.5" fill="' + t.trim + '"/>' +
-        '</g>';
+    sword: function () {
+      return '<path d="M67.2 72 L67.2 22 L69 13 L70.8 22 L70.8 72 Z" fill="url(#bbcBlade)"' + ST + '/>' +
+        '<path d="M69 20 V70" stroke="#8b93a2" stroke-width="0.9" opacity="0.8"/>' +
+        '<rect x="60.5" y="71.5" width="17" height="3.6" rx="1.6" fill="url(#bbcGold)"' + ST + '/>' +
+        '<rect x="67.3" y="75" width="3.4" height="11" rx="1.5" fill="url(#bbcLeather)"' + ST + '/>' +
+        '<circle cx="69" cy="88.5" r="2.6" fill="url(#bbcGold)"' + ST + '/>';
     }
   };
 
+  /* ---------- the six figures ---------- */
+
   var BUILDERS = {
-    p: function (t) { // Pawn: plucky peasant with pitchfork
-      return legs(t) + backArm(t, t.cloth) +
-        torso(t, t.main, '<rect x="36" y="80" width="28" height="5" fill="' + t.trim2 + '"/>' +
-          '<circle cx="50" cy="82.5" r="3.5" fill="' + t.trim + '"/>') +
-        head(t, '<path d="M31 36 Q31 18 50 18 Q69 18 69 36 Q60 30 50 30 Q40 30 31 36 Z" fill="' + t.main2 + '"/>' +
-          '<circle cx="50" cy="19" r="3.5" fill="' + t.trim + '"/>') +
-        weaponArm(t, t.cloth, WEAPONS.pitchfork(t));
+    /* Pawn: man-at-arms — kettle helm, quilted gambeson, spear */
+    p: function (t) {
+      return legs(t, 'cloth') +
+        backArm('url(#bbcLeather)') +
+        '<g class="torso">' +
+        '<path d="M39 46 Q37 66 40 82 L60 82 Q63 66 61 46 Q50 41 39 46 Z" fill="url(#bbcLeather)"' + ST + '/>' +
+        '<path d="M44 45 V81 M50 44 V82 M56 45 V81" stroke="#40301e" stroke-width="0.8" opacity="0.7"/>' +
+        '<path d="M39 60 h22 M39.5 71 h21" stroke="#40301e" stroke-width="0.8" opacity="0.7"/>' +
+        '<rect x="38.5" y="74" width="23" height="4" fill="url(#bbcIron)"' + ST + '/>' +
+        '<rect x="47.5" y="74" width="5" height="4" fill="url(#bbcGold)"/>' +
+        '</g>' +
+        '<g class="head">' + neck() +
+        '<path d="M42 33 Q50 38 58 33 L58 30 L42 30 Z" fill="url(#bbcIron)" opacity="0.9"/>' +
+        headBase(t) + face(t) +
+        '<path d="M40.5 20 Q41 11 50 10.5 Q59 11 59.5 20 Z" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<ellipse cx="50" cy="20" rx="14.5" ry="3.2" fill="url(#bbcIron)"' + ST + '/>' +
+        '</g>' +
+        weaponArm('url(#bbcLeather)', WEAPONS.spear());
     },
-    n: function (t) { // Knight: armored, big helm with plume, spiked mace
-      return legs(t, t.metal2) + backArm(t, t.metal) +
-        torso(t, t.metal, '<path d="M38 66 Q50 74 62 66 L62 74 Q50 82 38 74 Z" fill="' + t.main + '"/>' +
-          '<circle cx="50" cy="92" r="5" fill="' + t.trim + '"/>') +
-        head(t, '<path d="M30 42 Q28 16 50 15 Q72 16 70 42 L70 34 Q70 46 62 46 L60 34 L40 34 L38 46 Q30 46 30 34 Z" fill="' + t.metal + '"/>' +
-          '<path d="M30 34 Q30 15 50 14 Q70 15 70 34 Q60 26 50 26 Q40 26 30 34 Z" fill="' + t.metal2 + '"/>' +
-          '<path d="M50 14 Q46 2 36 4 Q44 8 42 16 Z" fill="' + t.main + '"/>') +
-        weaponArm(t, t.metal, WEAPONS.mace(t));
+
+    /* Knight: full plate, great helm with plume, flanged mace */
+    n: function (t) {
+      return legs(t, 'steel') +
+        backArm('url(#bbcSteel)') +
+        '<g class="torso">' +
+        '<path d="M38 46 Q35 64 39 80 L61 80 Q65 64 62 46 Q50 40 38 46 Z" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<path d="M45 46 L50 62 L55 46" stroke="#8b93a2" stroke-width="0.9" fill="none" opacity="0.8"/>' +
+        '<rect x="44" y="52" width="12" height="18" rx="2" fill="' + t.fab + '" opacity="0.92"' + ST + '/>' +
+        '<path d="M39.5 80 q10.5 5 21 0 l-1 7 q-9.5 4 -19 0 Z" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<circle cx="37" cy="47" r="6.8" fill="url(#bbcSteelH)"' + ST + '/>' +
+        '<circle cx="63" cy="47" r="6.8" fill="url(#bbcSteelH)"' + ST + '/>' +
+        '</g>' +
+        '<g class="head">' +
+        '<path d="M41 12 Q41 8 50 8 Q59 8 59 12 L59 34 Q50 37 41 34 Z" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<rect x="41" y="10" width="18" height="3" fill="url(#bbcIron)"/>' +
+        '<rect x="42.5" y="21.5" width="15" height="4.6" rx="2" fill="#0e0f13"/>' +
+        '<g transform="translate(0,-1)">' + face(t, { eyeY: 24.6, noNose: true, noMouth: true }) + '</g>' +
+        '<path d="M50 13 V34 M44 28.5 h3 M53 28.5 h3 M44 31.5 h3 M53 31.5 h3" stroke="#5c6470" stroke-width="0.9" opacity="0.8"/>' +
+        '<path d="M50 8 Q44 -2 34 1 Q42 4 41.5 12 Q45 8.5 50 8 Z" fill="' + t.plume + '"' + ST + '/>' +
+        '</g>' +
+        weaponArm('url(#bbcSteel)', WEAPONS.mace());
     },
-    r: function (t) { // Rook: stone golem with tower-top head and club
-      var stone = '#9a938a', stone2 = '#6f6960';
+
+    /* Rook: tower guardian — crenellated helm, massive frame, warhammer */
+    r: function (t) {
+      return legs(t, 'iron') +
+        '<g class="arm-back">' +
+        '<path d="M34 48 Q26 60 28 76 l7 1 Q34 62 40 51 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<circle cx="31" cy="79" r="4.4" fill="url(#bbcSkin)"' + ST + '/>' +
+        '</g>' +
+        '<g class="torso">' +
+        '<path d="M34 46 Q31 66 35 82 L65 82 Q69 66 66 46 Q50 39 34 46 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M34.5 56 h31 M34 66 h32 M34.8 75 h30.4" stroke="#2e3138" stroke-width="1.4" opacity="0.8"/>' +
+        '<circle cx="38" cy="51" r="1.1" fill="#23252b"/><circle cx="62" cy="51" r="1.1" fill="#23252b"/>' +
+        '<circle cx="37" cy="61" r="1.1" fill="#23252b"/><circle cx="63" cy="61" r="1.1" fill="#23252b"/>' +
+        '<rect x="44" y="48" width="12" height="10" rx="1.5" fill="' + t.fab + '" opacity="0.9"' + ST + '/>' +
+        '<circle cx="35" cy="46" r="8" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<circle cx="65" cy="46" r="8" fill="url(#bbcSteel)"' + ST + '/>' +
+        '</g>' +
+        '<g class="head">' +
+        '<path d="M39 34 L39 10 L44 10 L44 15 L47.5 15 L47.5 10 L52.5 10 L52.5 15 L56 15 L56 10 L61 10 L61 34 Q50 37.5 39 34 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<rect x="41.5" y="22" width="17" height="4.4" rx="2" fill="#0e0f13"/>' +
+        '<g transform="translate(0,-0.5)">' + face(t, { eyeY: 24.4, noNose: true, noMouth: true }) + '</g>' +
+        '<path d="M39 19 h22" stroke="#2e3138" stroke-width="1.2"/>' +
+        '<rect x="47" y="28.5" width="6" height="1.6" fill="' + t.plume + '" opacity="0.9"/>' +
+        '</g>' +
+        weaponArm('url(#bbcIron)', WEAPONS.hammer());
+    },
+
+    /* Bishop: robed cleric — tall mitre, grey beard, gilded crozier */
+    b: function (t) {
       return '<g class="legs">' +
-        '<rect x="36" y="98" width="12" height="22" rx="4" fill="' + stone2 + '"/>' +
-        '<rect x="52" y="98" width="12" height="22" rx="4" fill="' + stone2 + '"/>' +
-        '<ellipse cx="42" cy="121" rx="8" ry="4.5" fill="' + stone2 + '"/>' +
-        '<ellipse cx="58" cy="121" rx="8" ry="4.5" fill="' + stone2 + '"/></g>' +
-        '<g class="arm-back"><rect x="24" y="62" width="13" height="30" rx="6" fill="' + stone + '"/>' +
-        '<circle cx="31" cy="93" r="7.5" fill="' + stone2 + '"/></g>' +
-        '<g class="torso"><path d="M32 62 Q29 80 33 98 Q34 106 50 106 Q66 106 67 98 Q71 80 68 62 Q58 55 50 55 Q42 55 32 62 Z" fill="' + stone + '"/>' +
-        '<path d="M38 70 h10 M52 82 h12 M36 90 h9" stroke="' + stone2 + '" stroke-width="2.5" stroke-linecap="round"/>' +
-        '<rect x="40" y="58" width="20" height="7" rx="3" fill="' + t.main + '"/></g>' +
-        '<g class="head"><circle cx="50" cy="38" r="19" fill="' + stone + '"/>' +
-        face({ skin: stone }, null) +
-        '<path d="M30 30 L30 12 L38 12 L38 19 L45 19 L45 12 L55 12 L55 19 L62 19 L62 12 L70 12 L70 30 Q60 24 50 24 Q40 24 30 30 Z" fill="' + stone2 + '"/>' +
-        '<rect x="30" y="27" width="40" height="5" fill="' + t.main + '"/></g>' +
-        '<g class="arm-weapon"><rect x="60" y="60" width="13" height="30" rx="6" fill="' + stone + '"/>' +
-        '<circle cx="66.5" cy="91" r="8" fill="' + stone2 + '"/>' + WEAPONS.club(t) + '</g>';
+        '<path d="M40 80 Q34 108 35 126 Q50 131 65 126 Q66 108 60 80 Z" fill="url(#bbcRobe)"' + ST + '/>' +
+        '<path d="M42 90 Q41 110 41.5 124 M58 90 Q59 110 58.5 124" stroke="#a2977f" stroke-width="0.9" opacity="0.8"/>' +
+        '<path d="M35.5 121 q14.5 5 29 0 l0 4.5 q-14.5 5 -29 0 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '</g>' +
+        backArm('url(#bbcRobe)') +
+        '<g class="torso">' +
+        '<path d="M39 46 Q37 64 40 82 L60 82 Q63 64 61 46 Q50 41 39 46 Z" fill="url(#bbcRobe)"' + ST + '/>' +
+        '<path d="M46.5 44 L50 82 L53.5 44" fill="' + t.fab + '"' + ST + '/>' +
+        '<path d="M50 52 v7 M47.5 54.8 h5" stroke="url(#bbcGold)" stroke-width="1.6" stroke-linecap="round"/>' +
+        '<path d="M39 46 q11 -5 22 0 l0 4 q-11 -5 -22 0 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '</g>' +
+        '<g class="head">' + neck() + headBase(t) + face(t, { noMouth: true }) +
+        '<path d="M42 35 Q42 44 50 44.5 Q58 44 58 35 Q54 32.5 50 32.5 Q46 32.5 42 35 Z" fill="' + t.beard + '"' + ST + '/>' +
+        '<path d="M46 36.5 q4 2.5 8 0" stroke="#8f887a" stroke-width="0.7" fill="none" opacity="0.7"/>' +
+        '<path d="M42.5 18 L50 1.5 L57.5 18 Q50 21.5 42.5 18 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '<path d="M50 4.5 V17 M46.7 9.5 h6.6" stroke="url(#bbcGold)" stroke-width="1.6" stroke-linecap="round"/>' +
+        '<path d="M42.3 16.5 q7.7 4 15.4 0 l0 3.6 q-7.7 4 -15.4 0 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '</g>' +
+        weaponArm('url(#bbcRobe)', WEAPONS.crozier());
     },
-    b: function (t) { // Bishop: robed, tall mitre, glowing staff
-      return '<g class="legs"><path d="M36 96 Q34 116 40 120 L60 120 Q66 116 64 96 Z" fill="' + t.main2 + '"/></g>' +
-        backArm(t, t.cloth) +
-        torso(t, t.cloth, '<path d="M44 62 L50 104 L56 62 Z" fill="' + t.trim + '"/>' +
-          '<path d="M47 70 h6 M50 67 v12" stroke="' + t.main2 + '" stroke-width="2.2" stroke-linecap="round"/>') +
-        head(t, '<path d="M34 34 Q34 24 42 22 L50 0 L58 22 Q66 24 66 34 Q58 28 50 28 Q42 28 34 34 Z" fill="' + t.main + '"/>' +
-          '<path d="M50 5 L50 24" stroke="' + t.trim + '" stroke-width="2.5"/>' +
-          '<path d="M45 14 h10" stroke="' + t.trim + '" stroke-width="2.5"/>', { beard: '#cfc7bd' }) +
-        weaponArm(t, t.cloth, WEAPONS.staff(t));
+
+    /* Queen: crowned regent — gown, jeweled scepter */
+    q: function (t) {
+      return '<g class="legs">' +
+        '<path d="M41 74 Q30 106 31 127 Q50 132 69 127 Q70 106 59 74 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '<path d="M44 84 Q40 108 40.5 125 M56 84 Q60 108 59.5 125" stroke="' + t.edge + '" stroke-width="0.9" opacity="0.75"/>' +
+        '<path d="M31.5 122 q18.5 6 37 0 l0.3 4 q-19 6 -37.6 0 Z" fill="url(#bbcGold)" opacity="0.85"/>' +
+        '</g>' +
+        backArm(t.fab) +
+        '<g class="torso">' +
+        '<path d="M40 46 Q38 62 42 76 L58 76 Q62 62 60 46 Q50 41 40 46 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '<path d="M46 48 L54 60 M54 48 L46 60 M46 60 L54 70 M54 60 L46 70" stroke="url(#bbcGold)" stroke-width="0.9" opacity="0.85"/>' +
+        '<path d="M40 46 q10 -4.5 20 0 l0 3.5 q-10 -4.5 -20 0 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '</g>' +
+        '<g class="head">' + neck() +
+        '<path d="M40 22 Q37 40 42 50 L45 47 Q42 36 43.5 24 Z" fill="' + t.hair + '"' + ST + '/>' +
+        '<path d="M60 22 Q63 40 58 50 L55 47 Q58 36 56.5 24 Z" fill="' + t.hair + '"' + ST + '/>' +
+        headBase(t) + face(t) +
+        '<path d="M41 22 Q42 13.5 50 13 Q58 13.5 59 22 Q50 18 41 22 Z" fill="' + t.hair + '"' + ST + '/>' +
+        '<path d="M42.5 15.5 L44 7.5 L47.5 12 L50 5.5 L52.5 12 L56 7.5 L57.5 15.5 Q50 12.5 42.5 15.5 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<circle cx="44" cy="8.5" r="1.2" fill="#fff"/><circle cx="50" cy="6.5" r="1.3" fill="' + t.jewel + '"/><circle cx="56" cy="8.5" r="1.2" fill="#fff"/>' +
+        '<circle cx="50" cy="36.5" r="1.3" fill="' + t.jewel + '"/>' +
+        '</g>' +
+        weaponArm(t.fab, WEAPONS.scepter(t));
     },
-    q: function (t) { // Queen: gown, crown, star scepter
-      return '<g class="legs"><path d="M34 92 Q28 118 38 121 L62 121 Q72 118 66 92 Z" fill="' + t.main + '"/>' +
-        '<path d="M38 108 Q50 114 62 108" stroke="' + t.trim + '" stroke-width="2" fill="none"/></g>' +
-        backArm(t, t.main) +
-        torso(t, t.main, '<path d="M40 62 Q50 70 60 62 L60 70 Q50 78 40 70 Z" fill="' + t.trim + '"/>' +
-          '<circle cx="50" cy="88" r="4" fill="' + t.trim + '"/>') +
-        head(t, '<path d="M32 34 Q30 50 36 58 L36 30 Z" fill="#7a4a21"/>' +
-          '<path d="M68 34 Q70 50 64 58 L64 30 Z" fill="#7a4a21"/>' +
-          '<path d="M31 34 Q31 16 50 16 Q69 16 69 34 Q60 26 50 26 Q40 26 31 34 Z" fill="#7a4a21"/>' +
-          '<path d="M36 22 L38 10 L44 18 L50 8 L56 18 L62 10 L64 22 Q50 16 36 22 Z" fill="' + t.trim + '" stroke="' + t.trim2 + '" stroke-width="1.5"/>' +
-          '<circle cx="38" cy="12" r="2.5" fill="#e4526e"/><circle cx="50" cy="10" r="2.5" fill="#4fc3f7"/><circle cx="62" cy="12" r="2.5" fill="#7ed36b"/>') +
-        weaponArm(t, t.main, WEAPONS.scepter(t));
-    },
-    k: function (t) { // King: big crown, big beard (it IS Beardy's game), sword
-      return legs(t, t.metal2) + backArm(t, t.main) +
-        '<g class="cape"><path d="M34 62 Q26 90 30 112 L40 104 Q36 82 40 64 Z" fill="' + t.main2 + '"/></g>' +
-        torso(t, t.main, '<path d="M36 66 L64 66 L64 72 L36 72 Z" fill="#fff" opacity="0.25"/>' +
-          '<rect x="36" y="84" width="28" height="5" fill="' + t.trim2 + '"/>' +
-          '<circle cx="50" cy="86.5" r="4" fill="' + t.trim + '"/>') +
-        head(t, '<path d="M33 30 L33 12 L41 20 L50 8 L59 20 L67 12 L67 30 Q58 24 50 24 Q42 24 33 30 Z" fill="' + t.trim + '" stroke="' + t.trim2 + '" stroke-width="1.5"/>' +
-          '<circle cx="50" cy="14" r="3" fill="#e4526e"/><circle cx="39" cy="19" r="2" fill="#4fc3f7"/><circle cx="61" cy="19" r="2" fill="#4fc3f7"/>',
-          { beard: t.color === 'w' ? '#e8e3da' : '#4a3a2e' }) +
-        weaponArm(t, t.main, WEAPONS.sword(t));
+
+    /* King: fur mantle, great crown, full beard, longsword */
+    k: function (t) {
+      return legs(t, 'cloth') +
+        '<path class="cape" d="M36 47 Q28 80 31 112 L39 106 Q36 78 41 52 Z" fill="' + t.edge + '"' + ST + '/>' +
+        backArm(t.fab) +
+        '<g class="torso">' +
+        '<path d="M37 46 Q34 66 38 84 L62 84 Q66 66 63 46 Q50 40 37 46 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '<rect x="37" y="74" width="26" height="4.5" fill="url(#bbcLeather)"' + ST + '/>' +
+        '<rect x="47" y="73.5" width="6" height="5.5" rx="1" fill="url(#bbcGold)"' + ST + '/>' +
+        '<path d="M37 46 Q50 41 63 46 L61.5 56 Q50 50 38.5 56 Z" fill="url(#bbcFur)"' + ST + '/>' +
+        '<circle cx="42" cy="50" r="0.8" fill="#8d8577"/><circle cx="50" cy="47.5" r="0.8" fill="#8d8577"/><circle cx="58" cy="50" r="0.8" fill="#8d8577"/>' +
+        '</g>' +
+        '<g class="head">' + neck() + headBase(t) + face(t, { noMouth: true }) +
+        '<path d="M40.5 30 Q39 46 50 47.5 Q61 46 59.5 30 Q55 34.5 50 34.5 Q45 34.5 40.5 30 Z" fill="' + t.beard + '"' + ST + '/>' +
+        '<path d="M45 36 q5 3 10 0 M47 42 q3 1.6 6 0" stroke="#9a917f" stroke-width="0.7" fill="none" opacity="0.65"/>' +
+        '<path d="M41 20 Q42 12.5 50 12 Q58 12.5 59 20 Q50 16.5 41 20 Z" fill="' + t.hair + '"/>' +
+        '<path d="M41.5 16 L42.5 5 L46.5 10.5 L50 3 L53.5 10.5 L57.5 5 L58.5 16 Q50 12.5 41.5 16 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<rect x="41.8" y="14.2" width="16.4" height="3.4" rx="1.5" fill="url(#bbcGold)"' + ST + '/>' +
+        '<circle cx="45" cy="15.9" r="1.1" fill="' + t.jewel + '"/><circle cx="50" cy="15.9" r="1.1" fill="#fff"/><circle cx="55" cy="15.9" r="1.1" fill="' + t.jewel + '"/>' +
+        '<circle cx="50" cy="5.5" r="1.4" fill="' + t.jewel + '"/>' +
+        '</g>' +
+        weaponArm(t.fab, WEAPONS.sword(), 69, 80);
     }
   };
 
   /* Build a full character SVG string. */
   function svg(type, color, cls) {
-    var t = Object.assign({ color: color }, TEAM[color]);
-    return '<svg class="char char-' + type + ' team-' + color + (cls ? ' ' + cls : '') + '" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">' +
-      '<ellipse class="shadow" cx="50" cy="123" rx="24" ry="5" fill="#000" opacity="0.18"/>' +
+    var t = TEAM[color];
+    return '<svg class="char char-' + type + ' team-' + color + (cls ? ' ' + cls : '') + '" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">' +
+      '<ellipse class="shadow" cx="50" cy="131" rx="21" ry="4.5" fill="#000" opacity="0.22"/>' +
       '<g class="body-root">' + BUILDERS[type](t) + '</g></svg>';
   }
 
-  var NAMES = {
-    p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen', k: 'King'
+  var NAMES = { p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen', k: 'King' };
+  var GLYPH = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' };
+  var MOVES_HINT = {
+    p: 'marches forward, captures diagonally',
+    n: 'jumps in an L shape',
+    b: 'slides along diagonals',
+    r: 'slides in straight lines',
+    q: 'slides in any direction',
+    k: 'steps one square'
   };
   var FLAVOR = {
-    p: 'Pokey the Pawn', n: 'Sir Bonk', b: 'Brother Whack',
-    r: 'Rocky the Rook', q: 'Queen Zapper', k: 'King Beardy'
+    p: 'Pikeman Pokey', n: 'Sir Bonk', b: 'Brother Whack',
+    r: 'Ironclad Rook', q: 'Queen Zapper', k: 'King Beardy'
   };
 
-  return { svg: svg, NAMES: NAMES, FLAVOR: FLAVOR, TEAM: TEAM };
+  return { svg: svg, defs: defs, NAMES: NAMES, GLYPH: GLYPH, MOVES_HINT: MOVES_HINT, FLAVOR: FLAVOR, TEAM: TEAM };
 })();
