@@ -309,7 +309,8 @@ var Characters = (function () {
     var t = TEAM[color];
     return '<svg class="char char-' + type + ' team-' + color + (cls ? ' ' + cls : '') + '" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">' +
       '<ellipse class="shadow" cx="50" cy="131" rx="21" ry="4.5" fill="#000" opacity="0.22"/>' +
-      '<g class="body-root">' + BUILDERS[type](t) + '</g></svg>';
+      '<g class="body-root"><g transform="translate(50 0) scale(1.18 1) translate(-50 0)">' +
+      BUILDERS[type](t) + '</g></g></svg>';
   }
 
   var NAMES = { p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen', k: 'King' };

@@ -109,7 +109,7 @@
   function placeAt(node, rf, cf) {
     var yB = rowY(rf + 1);
     var sq = lineW(yB) * 12.5;        // square width % at the feet line
-    var pw = sq * 1.30, ph = pw * 1.4; // svg viewBox is 100x140
+    var pw = sq * 1.45, ph = pw * 1.4; // svg viewBox is 100x140
     var xC = colX(cf + 0.5, yB);
     var st = node.style;
     st.left = (xC - pw / 2) + '%';
