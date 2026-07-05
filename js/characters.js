@@ -1,8 +1,9 @@
-/* Beardy's Battle Chess — character art.
- * Realistic-styled medieval figures rendered as layered SVG with shared
- * gradient materials (steel, gold, leather, cloth). Groups are classed
- * (.body-root, .arm-weapon, .head, .eyes/.eyes-dead) so CSS can animate
- * idle bobbing, weapon swings and knock-outs.
+/* Beardy's Battle Chess — character art, grimdark edition.
+ * Faceless medieval warriors in the spirit of the original Battle Chess:
+ * lowered visors, deep hoods and glowing eyes in the dark. Layered SVG
+ * with shared gradient materials. Groups are classed (.body-root,
+ * .arm-weapon, .head, .eyes/.eyes-dead) so CSS can animate idle bobbing,
+ * weapon swings, knock-outs and decapitations.
  * Characters.defs() must be injected into the document once at boot. */
 var Characters = (function () {
   'use strict';
@@ -18,304 +19,321 @@ var Characters = (function () {
 
   function defs() {
     return '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>' +
-      grad('bbcSteel', [[0, '#b9bfca'], [0.5, '#6f7683'], [1, '#3b404a']]) +
-      grad('bbcSteelH', [[0, '#cdd2db'], [0.55, '#8b93a2'], [1, '#5a6170']], 1, 0.3) +
-      grad('bbcIron', [[0, '#565b66'], [0.55, '#33363e'], [1, '#191b20']]) +
+      grad('bbcSteel', [[0, '#a8afbc'], [0.5, '#5f6673'], [1, '#2e323b']]) +
+      grad('bbcSteelH', [[0, '#c4cad4'], [0.55, '#7b8494'], [1, '#474d59']], 1, 0.3) +
+      grad('bbcIron', [[0, '#4a4f5a'], [0.55, '#2a2d35'], [1, '#14161b']]) +
       grad('bbcGold', [[0, '#c9a84c'], [0.5, '#8a6d2a'], [1, '#4e3d12']]) +
-      grad('bbcLeather', [[0, '#6b4d31'], [0.55, '#453120'], [1, '#251a10']]) +
-      grad('bbcWood', [[0, '#5c452a'], [1, '#312312']], 1, 0) +
+      grad('bbcLeather', [[0, '#5c422a'], [0.55, '#3a2a1a'], [1, '#20160c']]) +
+      grad('bbcWood', [[0, '#4e3a22'], [1, '#291d0e']], 1, 0) +
       grad('bbcBlade', [[0, '#dfe3ea'], [0.5, '#98a0ae'], [1, '#5f6673']], 1, 0) +
-      grad('bbcSkin', [[0, '#d4ad85'], [1, '#a67c56']]) +
-      grad('bbcFabW', [[0, '#33507f'], [0.55, '#1c2f52'], [1, '#0d1626']]) +
-      grad('bbcFabB', [[0, '#8f3030'], [0.55, '#5c1c1c'], [1, '#300d0d']]) +
-      grad('bbcRobe', [[0, '#c9c2b0'], [0.6, '#9a927e'], [1, '#655e4f']]) +
-      grad('bbcFur', [[0, '#d2ccc0'], [1, '#918a7c']]) +
+      grad('bbcFabW', [[0, '#2c4a7d'], [0.55, '#182b4e'], [1, '#0a1424']]) +
+      grad('bbcFabB', [[0, '#7d2626'], [0.55, '#4e1616'], [1, '#280a0a']]) +
+      grad('bbcCloak', [[0, '#3f3b47'], [0.55, '#26232c'], [1, '#121017']]) +
+      grad('bbcFur', [[0, '#b5aea0'], [1, '#6e675b']]) +
+      '<pattern id="bbcMail" width="6" height="4.6" patternUnits="userSpaceOnUse">' +
+      '<rect width="6" height="4.6" fill="#20232a"/>' +
+      '<path d="M0 2.3 a3 3 0 0 1 6 0" stroke="#4a505c" stroke-width="1" fill="none"/>' +
+      '</pattern>' +
+      '<filter id="bbcGlow" x="-150%" y="-150%" width="400%" height="400%">' +
+      '<feGaussianBlur stdDeviation="1.4"/></filter>' +
       '</defs></svg>';
   }
 
-  var ST = ' stroke="#0a0b10" stroke-width="1" stroke-opacity="0.7"';
+  var ST = ' stroke="#07080c" stroke-width="1" stroke-opacity="0.75"';
+  var RIM = ' stroke="#aebfd4" stroke-width="0.7" stroke-opacity="0.5"';
 
   var TEAM = {
-    w: { fab: 'url(#bbcFabW)', edge: '#0d1626', plume: '#3a5c94', jewel: '#2f5da8',
-         glyphColor: '#7f9ccb', hair: '#4a3a26', beard: '#b8b2a4' },
-    b: { fab: 'url(#bbcFabB)', edge: '#300d0d', plume: '#8f3030', jewel: '#a32633',
-         glyphColor: '#c98080', hair: '#241a10', beard: '#453629' }
+    w: { fab: 'url(#bbcFabW)', edge: '#0a1424', plume: '#2c4a7d', jewel: '#2f5da8',
+         glow: '#8fc1ff', glyphColor: '#7f9ccb', beard: '#9d968a' },
+    b: { fab: 'url(#bbcFabB)', edge: '#280a0a', plume: '#7d2626', jewel: '#a32633',
+         glow: '#ff7a52', glyphColor: '#c98080', beard: '#453629' }
   };
 
   /* ---------- shared body parts (viewBox 0 0 100 140, ground y≈132) ---------- */
 
-  function face(t, opts) {
-    opts = opts || {};
-    var s = '';
-    var ey = opts.eyeY || 25;
-    s += '<g class="eyes">' +
-      '<ellipse cx="46.4" cy="' + ey + '" rx="1.5" ry="1.9" fill="#221d18"/>' +
-      '<ellipse cx="53.6" cy="' + ey + '" rx="1.5" ry="1.9" fill="#221d18"/>' +
-      '<circle cx="46.9" cy="' + (ey - 0.6) + '" r="0.5" fill="#fff" opacity="0.8"/>' +
-      '<circle cx="54.1" cy="' + (ey - 0.6) + '" r="0.5" fill="#fff" opacity="0.8"/>' +
+  /* Glowing eyes in a dark visor/hood. cy = eye line, gap = half distance. */
+  function eyes(t, cy, gap) {
+    gap = gap || 3.6;
+    return '<g class="eyes">' +
+      '<circle cx="' + (50 - gap) + '" cy="' + cy + '" r="3.2" fill="' + t.glow + '" opacity="0.5" filter="url(#bbcGlow)"/>' +
+      '<circle cx="' + (50 + gap) + '" cy="' + cy + '" r="3.2" fill="' + t.glow + '" opacity="0.5" filter="url(#bbcGlow)"/>' +
+      '<ellipse cx="' + (50 - gap) + '" cy="' + cy + '" rx="1.7" ry="1.4" fill="' + t.glow + '"/>' +
+      '<ellipse cx="' + (50 + gap) + '" cy="' + cy + '" rx="1.7" ry="1.4" fill="' + t.glow + '"/>' +
+      '<circle cx="' + (50 - gap) + '" cy="' + (cy - 0.4) + '" r="0.6" fill="#fff" opacity="0.9"/>' +
+      '<circle cx="' + (50 + gap) + '" cy="' + (cy - 0.4) + '" r="0.6" fill="#fff" opacity="0.9"/>' +
+      '</g>' +
+      '<g class="eyes-dead" style="display:none">' +
+      '<path d="M' + (48 - gap) + ' ' + (cy - 1.6) + ' l3.4 3.2 M' + (51.4 - gap) + ' ' + (cy - 1.6) + ' l-3.4 3.2" stroke="#8a8f99" stroke-width="1.2" stroke-linecap="round"/>' +
+      '<path d="M' + (48 + gap) + ' ' + (cy - 1.6) + ' l3.4 3.2 M' + (51.4 + gap) + ' ' + (cy - 1.6) + ' l-3.4 3.2" stroke="#8a8f99" stroke-width="1.2" stroke-linecap="round"/>' +
       '</g>';
-    s += '<g class="eyes-dead" style="display:none">' +
-      '<path d="M44.2 ' + (ey - 2) + ' l4.4 4 M48.6 ' + (ey - 2) + ' l-4.4 4" stroke="#221d18" stroke-width="1.5" stroke-linecap="round"/>' +
-      '<path d="M51.4 ' + (ey - 2) + ' l4.4 4 M55.8 ' + (ey - 2) + ' l-4.4 4" stroke="#221d18" stroke-width="1.5" stroke-linecap="round"/>' +
-      '</g>';
-    if (!opts.noNose) {
-      s += '<path d="M50 ' + (ey + 1) + ' q1 2 0 3.4" stroke="#b78a5f" stroke-width="1" fill="none" stroke-linecap="round"/>';
-    }
-    if (!opts.noMouth) {
-      s += '<path d="M47.4 ' + (ey + 7) + ' h5.2" stroke="#8a5d3d" stroke-width="1.1" stroke-linecap="round"/>';
-    }
-    return s;
   }
 
-  function headBase(t) {
-    return '<circle cx="50" cy="25" r="9.2" fill="url(#bbcSkin)"' + ST + '/>' +
-      '<path d="M41.5 22 Q50 17.5 58.5 22" stroke="#c2926a" stroke-width="0.8" fill="none" opacity="0.6"/>';
+  function boots() {
+    return '<path d="M39.5 121 l-4.5 7.5 q-0.8 2.4 2 2.4 l9 0 l0.8 -9.9 Z" fill="url(#bbcIron)"' + ST + '/>' +
+      '<path d="M60.5 121 l4.5 7.5 q0.8 2.4 -2 2.4 l-9 0 l-0.8 -9.9 Z" fill="url(#bbcIron)"' + ST + '/>';
   }
 
-  function neck() {
-    return '<rect x="46.8" y="32" width="6.4" height="6" fill="url(#bbcSkin)"/>';
-  }
-
-  function boots(kind) {
-    var fill = kind === 'steel' ? 'url(#bbcSteel)' : 'url(#bbcLeather)';
-    return '<path d="M40 122 l-3.5 7 q-0.5 2 2 2 l8 0 l0.5 -9 Z" fill="' + fill + '"' + ST + '/>' +
-      '<path d="M60 122 l3.5 7 q0.5 2 -2 2 l-8 0 l-0.5 -9 Z" fill="' + fill + '"' + ST + '/>';
-  }
-
-  function legs(t, kind) {
-    var fill = kind === 'steel' ? 'url(#bbcSteel)' : kind === 'iron' ? 'url(#bbcIron)' : t.fab;
-    var wide = kind === 'iron';
-    var lw = wide ? 8.5 : 6.5;
+  function legs(fill) {
     return '<g class="legs">' +
-      '<rect x="' + (46 - lw) + '" y="84" width="' + lw + '" height="40" rx="3" fill="' + fill + '"' + ST + '/>' +
-      '<rect x="54" y="84" width="' + lw + '" height="40" rx="3" fill="' + fill + '"' + ST + '/>' +
-      (kind === 'steel' || kind === 'iron'
-        ? '<path d="M40 103 h12 M54 103 h12" stroke="#3a3e46" stroke-width="1" opacity="0.7"/>' : '') +
-      boots(kind === 'steel' || kind === 'iron' ? 'steel' : 'leather') +
-      '</g>';
+      '<rect x="39" y="82" width="8.5" height="41" rx="3" fill="' + fill + '"' + ST + '/>' +
+      '<rect x="52.5" y="82" width="8.5" height="41" rx="3" fill="' + fill + '"' + ST + '/>' +
+      '<circle cx="43.2" cy="101" r="3.4" fill="url(#bbcSteel)"' + ST + '/>' +
+      '<circle cx="56.8" cy="101" r="3.4" fill="url(#bbcSteel)"' + ST + '/>' +
+      boots() + '</g>';
   }
 
   function backArm(fill, hx, hy) {
     hx = hx || 31; hy = hy || 77;
     return '<g class="arm-back">' +
-      '<path d="M37 48 Q30 60 ' + hx + ' ' + (hy - 3) + ' l6 2 Q38 62 43 50 Z" fill="' + fill + '"' + ST + '/>' +
-      '<circle cx="' + (hx + 1.5) + '" cy="' + hy + '" r="3.6" fill="url(#bbcSkin)"' + ST + '/>' +
+      '<path d="M37 48 Q29 60 ' + hx + ' ' + (hy - 3) + ' l6.5 2.5 Q38 62 44 50 Z" fill="' + fill + '"' + ST + '/>' +
+      '<circle cx="' + (hx + 1.5) + '" cy="' + hy + '" r="3.8" fill="url(#bbcIron)"' + ST + '/>' +
       '</g>';
   }
 
-  /* Weapon arm: shoulder at (63,48), hand at (hx,hy). CSS rotates about 64px 50px. */
+  /* Weapon arm: shoulder at (63,48). CSS rotates about 64px 50px. */
   function weaponArm(fill, weapon, hx, hy) {
     hx = hx || 69; hy = hy || 76;
     return '<g class="arm-weapon">' +
-      '<path d="M63 46 Q72 58 ' + (hx + 1) + ' ' + (hy - 4) + ' l-6 3 Q64 60 58 49 Z" fill="' + fill + '"' + ST + '/>' +
+      '<path d="M63 46 Q73 58 ' + (hx + 1.5) + ' ' + (hy - 4) + ' l-6.5 3.5 Q64 61 57.5 49 Z" fill="' + fill + '"' + ST + '/>' +
       weapon +
-      '<circle cx="' + hx + '" cy="' + hy + '" r="3.9" fill="url(#bbcSkin)"' + ST + '/>' +
+      '<circle cx="' + hx + '" cy="' + hy + '" r="4.2" fill="url(#bbcIron)"' + ST + '/>' +
       '</g>';
+  }
+
+  /* Ragged war-torn cape hanging behind the figure. */
+  function cape(t, wide) {
+    var w = wide ? 8 : 5;
+    return '<path class="cape" d="M' + (38 - w / 2) + ' 48 Q' + (28 - w) + ' 84 ' + (30 - w) + ' 116 ' +
+      'l5 -6 l3 7 l4 -8 l3 6 Q' + (36 - w / 3) + ' 80 ' + (42 - w / 2) + ' 52 Z" fill="' + t.edge + '"' + ST + '/>';
   }
 
   /* ---------- weapons (held vertical, hand ~ (69,76)) ---------- */
 
   var WEAPONS = {
     spear: function () {
-      return '<rect x="67.6" y="14" width="2.8" height="76" rx="1.2" fill="url(#bbcWood)"' + ST + '/>' +
-        '<path d="M69 2 q4 6 0 13 q-4 -7 0 -13 Z" fill="url(#bbcBlade)"' + ST + '/>' +
-        '<rect x="65.5" y="14.5" width="7" height="2.2" rx="1" fill="url(#bbcIron)"/>';
+      return '<rect x="67.5" y="12" width="3" height="78" rx="1.2" fill="url(#bbcWood)"' + ST + '/>' +
+        '<path d="M69 0 q4.5 6.5 0 14.5 q-4.5 -8 0 -14.5 Z" fill="url(#bbcBlade)"' + ST + '/>' +
+        '<rect x="65" y="13" width="8" height="2.4" rx="1" fill="url(#bbcIron)"/>';
     },
     mace: function () {
       var flanges = '';
-      for (var a = 0; a < 360; a += 60) {
-        flanges += '<path transform="rotate(' + a + ' 69 22)" d="M69 22 L65.6 12.5 Q69 10 72.4 12.5 Z" fill="url(#bbcIron)"' + ST + '/>';
+      for (var a = 0; a < 360; a += 45) {
+        flanges += '<path transform="rotate(' + a + ' 69 21)" d="M69 21 L65 10 Q69 7.5 73 10 Z" fill="url(#bbcIron)"' + ST + '/>';
       }
-      return '<rect x="67.5" y="28" width="3" height="60" rx="1.4" fill="url(#bbcWood)"' + ST + '/>' +
+      return '<rect x="67.3" y="27" width="3.4" height="62" rx="1.5" fill="url(#bbcWood)"' + ST + '/>' +
         flanges +
-        '<circle cx="69" cy="22" r="5.4" fill="url(#bbcSteel)"' + ST + '/>';
+        '<circle cx="69" cy="21" r="5.8" fill="url(#bbcSteel)"' + ST + '/>';
     },
-    hammer: function () {
-      return '<rect x="67" y="26" width="4" height="64" rx="1.8" fill="url(#bbcWood)"' + ST + '/>' +
-        '<rect x="58" y="12" width="22" height="13" rx="2.5" fill="url(#bbcIron)"' + ST + '/>' +
-        '<rect x="58" y="12" width="22" height="4" rx="2" fill="url(#bbcSteelH)" opacity="0.55"/>' +
-        '<path d="M80 15 l8 3.5 l-8 3.5 Z" fill="url(#bbcSteel)"' + ST + '/>' +
-        '<circle cx="62" cy="18.5" r="1" fill="#2e3138"/><circle cx="75" cy="18.5" r="1" fill="#2e3138"/>';
+    maul: function () {
+      return '<rect x="66.8" y="24" width="4.4" height="66" rx="2" fill="url(#bbcWood)"' + ST + '/>' +
+        '<rect x="55" y="8" width="28" height="16" rx="2.5" fill="url(#bbcIron)"' + ST + '/>' +
+        '<rect x="55" y="8" width="28" height="5" rx="2" fill="url(#bbcSteelH)" opacity="0.45"/>' +
+        '<path d="M83 12 l9 4 l-9 4 Z" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<circle cx="59.5" cy="16" r="1.2" fill="#0e1013"/><circle cx="69" cy="16" r="1.2" fill="#0e1013"/><circle cx="78" cy="16" r="1.2" fill="#0e1013"/>';
     },
     crozier: function () {
-      return '<rect x="67.8" y="18" width="2.6" height="74" rx="1.2" fill="url(#bbcGold)"' + ST + '/>' +
-        '<path d="M69 18 C69 8 82 8 82 16 C82 22 76 23 74 20" stroke="url(#bbcGold)" stroke-width="3.2" fill="none" stroke-linecap="round"/>' +
-        '<circle cx="74" cy="20" r="1.8" fill="url(#bbcGold)"/>';
+      return '<path d="M67.8 92 L68 18 q0 -2 1.2 -2 q1.4 0 1.4 2 L70.4 92 Z" fill="url(#bbcWood)"' + ST + '/>' +
+        '<path d="M69 17 C69 6.5 83 6.5 83 15.5 C83 22 76.5 23 74.5 19.5" stroke="url(#bbcGold)" stroke-width="3.4" fill="none" stroke-linecap="round"/>' +
+        '<circle cx="74.5" cy="19.5" r="2" fill="url(#bbcGold)"/>' +
+        '<path d="M66 30 l6 0" stroke="url(#bbcGold)" stroke-width="1.6"/>';
     },
     scepter: function (t) {
-      return '<rect x="68" y="26" width="2.2" height="54" rx="1" fill="url(#bbcGold)"' + ST + '/>' +
-        '<path d="M65 26 q4 3 8 0 l-1.5 -5 l-5 0 Z" fill="url(#bbcGold)"' + ST + '/>' +
-        '<circle cx="69" cy="16.5" r="5" fill="' + t.jewel + '"' + ST + '/>' +
-        '<circle cx="67.4" cy="14.8" r="1.5" fill="#fff" opacity="0.55"/>' +
-        '<path d="M69 9 v5 M66.5 11.5 h5" stroke="url(#bbcGold)" stroke-width="1.8" stroke-linecap="round"/>';
+      return '<rect x="67.9" y="24" width="2.4" height="56" rx="1" fill="url(#bbcGold)"' + ST + '/>' +
+        '<path d="M64.5 24 q4.5 3.4 9 0 l-1.6 -5.5 l-5.8 0 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<circle cx="69" cy="14.5" r="5.4" fill="' + t.jewel + '"' + ST + '/>' +
+        '<circle cx="67.2" cy="12.8" r="1.5" fill="#fff" opacity="0.4"/>' +
+        '<path d="M69 6 v4.5 M66.4 8.2 h5.2" stroke="url(#bbcGold)" stroke-width="1.8" stroke-linecap="round"/>';
     },
-    sword: function () {
-      return '<path d="M67.2 72 L67.2 22 L69 13 L70.8 22 L70.8 72 Z" fill="url(#bbcBlade)"' + ST + '/>' +
-        '<path d="M69 20 V70" stroke="#8b93a2" stroke-width="0.9" opacity="0.8"/>' +
-        '<rect x="60.5" y="71.5" width="17" height="3.6" rx="1.6" fill="url(#bbcGold)"' + ST + '/>' +
-        '<rect x="67.3" y="75" width="3.4" height="11" rx="1.5" fill="url(#bbcLeather)"' + ST + '/>' +
-        '<circle cx="69" cy="88.5" r="2.6" fill="url(#bbcGold)"' + ST + '/>';
+    greatsword: function () {
+      return '<path d="M66.6 74 L66.6 18 L69 7 L71.4 18 L71.4 74 Z" fill="url(#bbcBlade)"' + ST + '/>' +
+        '<path d="M69 15 V70" stroke="#5f6673" stroke-width="1" opacity="0.9"/>' +
+        '<path d="M58 73.5 l22 0 l-3 4.4 l-16 0 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<rect x="67" y="77.5" width="4" height="12" rx="1.6" fill="url(#bbcLeather)"' + ST + '/>' +
+        '<circle cx="69" cy="91.5" r="3" fill="url(#bbcGold)"' + ST + '/>';
     }
   };
 
   /* ---------- the six figures ---------- */
 
   var BUILDERS = {
-    /* Pawn: man-at-arms — kettle helm, quilted gambeson, spear */
+    /* Pawn: hooded footman — mail hauberk, round shield, war spear */
     p: function (t) {
-      return legs(t, 'cloth') +
-        backArm('url(#bbcLeather)') +
+      return legs(t.fab) +
         '<g class="torso">' +
-        '<path d="M39 46 Q37 66 40 82 L60 82 Q63 66 61 46 Q50 41 39 46 Z" fill="url(#bbcLeather)"' + ST + '/>' +
-        '<path d="M44 45 V81 M50 44 V82 M56 45 V81" stroke="#40301e" stroke-width="0.8" opacity="0.7"/>' +
-        '<path d="M39 60 h22 M39.5 71 h21" stroke="#40301e" stroke-width="0.8" opacity="0.7"/>' +
-        '<rect x="38.5" y="74" width="23" height="4" fill="url(#bbcIron)"' + ST + '/>' +
-        '<rect x="47.5" y="74" width="5" height="4" fill="url(#bbcGold)"/>' +
+        '<path d="M38 46 Q35.5 66 39 84 L61 84 Q64.5 66 62 46 Q50 40 38 46 Z" fill="url(#bbcMail)"' + ST + '/>' +
+        '<path d="M38 46 Q35.5 66 39 84" fill="none"' + RIM + '/>' +
+        '<path d="M45.5 45 L50 84 L54.5 45 Z" fill="' + t.fab + '" opacity="0.9"' + ST + '/>' +
+        '<rect x="38" y="76" width="24" height="4.4" fill="url(#bbcLeather)"' + ST + '/>' +
+        '<rect x="47.6" y="75.6" width="4.8" height="5.2" fill="url(#bbcIron)"/>' +
         '</g>' +
-        '<g class="head">' + neck() +
-        '<path d="M42 33 Q50 38 58 33 L58 30 L42 30 Z" fill="url(#bbcIron)" opacity="0.9"/>' +
-        headBase(t) + face(t) +
-        '<path d="M40.5 20 Q41 11 50 10.5 Q59 11 59.5 20 Z" fill="url(#bbcSteel)"' + ST + '/>' +
-        '<ellipse cx="50" cy="20" rx="14.5" ry="3.2" fill="url(#bbcIron)"' + ST + '/>' +
-        '</g>' +
-        weaponArm('url(#bbcLeather)', WEAPONS.spear());
-    },
-
-    /* Knight: full plate, great helm with plume, flanged mace */
-    n: function (t) {
-      return legs(t, 'steel') +
-        backArm('url(#bbcSteel)') +
-        '<g class="torso">' +
-        '<path d="M38 46 Q35 64 39 80 L61 80 Q65 64 62 46 Q50 40 38 46 Z" fill="url(#bbcSteel)"' + ST + '/>' +
-        '<path d="M45 46 L50 62 L55 46" stroke="#8b93a2" stroke-width="0.9" fill="none" opacity="0.8"/>' +
-        '<rect x="44" y="52" width="12" height="18" rx="2" fill="' + t.fab + '" opacity="0.92"' + ST + '/>' +
-        '<path d="M39.5 80 q10.5 5 21 0 l-1 7 q-9.5 4 -19 0 Z" fill="url(#bbcSteel)"' + ST + '/>' +
-        '<path d="M37 42 L33.5 31 L42 41 Z" fill="url(#bbcIron)"' + ST + '/>' +
-        '<path d="M63 42 L66.5 31 L58 41 Z" fill="url(#bbcIron)"' + ST + '/>' +
-        '<circle cx="37" cy="47" r="6.8" fill="url(#bbcSteelH)"' + ST + '/>' +
-        '<circle cx="63" cy="47" r="6.8" fill="url(#bbcSteelH)"' + ST + '/>' +
+        '<g class="arm-back">' +
+        '<path d="M37 48 Q29 58 30 72 l6 1 Q35 60 43 50 Z" fill="url(#bbcMail)"' + ST + '/>' +
+        '<circle cx="32" cy="74" r="10.5" fill="url(#bbcIron)"' + ST + '/>' +
+        '<circle cx="32" cy="74" r="10.5" fill="none" stroke="' + t.plume + '" stroke-width="1.8" stroke-opacity="0.9"/>' +
+        '<circle cx="32" cy="74" r="3.2" fill="url(#bbcSteel)"' + ST + '/>' +
         '</g>' +
         '<g class="head">' +
-        '<path d="M41 12 Q41 8 50 8 Q59 8 59 12 L59 34 Q50 37 41 34 Z" fill="url(#bbcSteel)"' + ST + '/>' +
-        '<rect x="41" y="10" width="18" height="3" fill="url(#bbcIron)"/>' +
-        '<rect x="42.5" y="21.5" width="15" height="4.6" rx="2" fill="#0e0f13"/>' +
-        '<g transform="translate(0,-1)">' + face(t, { eyeY: 24.6, noNose: true, noMouth: true }) + '</g>' +
-        '<path d="M50 13 V34 M44 28.5 h3 M53 28.5 h3 M44 31.5 h3 M53 31.5 h3" stroke="#5c6470" stroke-width="0.9" opacity="0.8"/>' +
-        '<path d="M50 8 Q44 -2 34 1 Q42 4 41.5 12 Q45 8.5 50 8 Z" fill="' + t.plume + '"' + ST + '/>' +
+        '<path d="M38 36 Q36 14 50 9 Q64 14 62 36 Q56 40 50 40 Q44 40 38 36 Z" fill="url(#bbcMail)"' + ST + '/>' +
+        '<path d="M40 33 Q40 18 50 15 Q60 18 60 33 Q55 36.5 50 36.5 Q45 36.5 40 33 Z" fill="#0b0c11"/>' +
+        eyes(t, 26) +
+        '<path d="M38 36 Q36 14 50 9" fill="none"' + RIM + '/>' +
+        '</g>' +
+        weaponArm('url(#bbcMail)', WEAPONS.spear());
+    },
+
+    /* Knight: horned bascinet, layered spiked pauldrons, flanged mace */
+    n: function (t) {
+      return legs('url(#bbcSteel)') + cape(t) +
+        '<g class="torso">' +
+        '<path d="M37 46 Q34 64 38 82 L62 82 Q66 64 63 46 Q50 39 37 46 Z" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<path d="M40 58 Q50 63 60 58 M41 68 Q50 73 59 68" stroke="#2e323b" stroke-width="1.3" fill="none"/>' +
+        '<path d="M37 46 Q34 64 38 82" fill="none"' + RIM + '/>' +
+        '<rect x="45" y="49" width="10" height="16" rx="1.5" fill="' + t.fab + '" opacity="0.95"' + ST + '/>' +
+        '<path d="M50 51 v11 M46.5 55 h7" stroke="' + t.plume + '" stroke-width="1.4" opacity="0.8"/>' +
+        '<path d="M36 41 L31 27 L42 39 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M64 41 L69 27 L58 39 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M30 45 q6 -6 14 -4 l-1 7 q-7 -2 -11 2 Z" fill="url(#bbcSteelH)"' + ST + '/>' +
+        '<path d="M70 45 q-6 -6 -14 -4 l1 7 q7 -2 11 2 Z" fill="url(#bbcSteelH)"' + ST + '/>' +
+        '</g>' +
+        '<g class="head">' +
+        '<path d="M40 38 Q38 12 50 9 Q62 12 60 38 Q50 42 40 38 Z" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<path d="M41.5 22 L58.5 22 L58 28 Q50 31 42 28 Z" fill="#0b0c11"/>' +
+        eyes(t, 25) +
+        '<path d="M44 31.5 v4 M47 32.5 v4 M53 32.5 v4 M56 31.5 v4" stroke="#2e323b" stroke-width="1"/>' +
+        '<path d="M42 13 Q34 4 30 -1 Q40 2 44 9 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M58 13 Q66 4 70 -1 Q60 2 56 9 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M40 38 Q38 12 50 9" fill="none"' + RIM + '/>' +
         '</g>' +
         weaponArm('url(#bbcSteel)', WEAPONS.mace());
     },
 
-    /* Rook: tower guardian — crenellated helm, massive frame, warhammer */
+    /* Rook: the executioner — a faceless iron tower with a great maul */
     r: function (t) {
-      return legs(t, 'iron') +
+      return '<g class="legs">' +
+        '<rect x="35" y="86" width="11" height="37" rx="3.5" fill="url(#bbcIron)"' + ST + '/>' +
+        '<rect x="54" y="86" width="11" height="37" rx="3.5" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M34 120 l-4 8 q-1 2.6 2 2.6 l11 0 l0.6 -10.6 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M66 120 l4 8 q1 2.6 -2 2.6 l-11 0 l-0.6 -10.6 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '</g>' +
         '<g class="arm-back">' +
-        '<path d="M34 48 Q26 60 28 76 l7 1 Q34 62 40 51 Z" fill="url(#bbcIron)"' + ST + '/>' +
-        '<circle cx="31" cy="79" r="4.4" fill="url(#bbcSkin)"' + ST + '/>' +
+        '<path d="M33 50 Q23 62 26 80 l8 1 Q33 64 40 53 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<circle cx="30" cy="83" r="5.5" fill="url(#bbcIron)"' + ST + '/>' +
         '</g>' +
         '<g class="torso">' +
-        '<path d="M34 46 Q31 66 35 82 L65 82 Q69 66 66 46 Q50 39 34 46 Z" fill="url(#bbcIron)"' + ST + '/>' +
-        '<path d="M34.5 56 h31 M34 66 h32 M34.8 75 h30.4" stroke="#2e3138" stroke-width="1.4" opacity="0.8"/>' +
-        '<circle cx="38" cy="51" r="1.1" fill="#23252b"/><circle cx="62" cy="51" r="1.1" fill="#23252b"/>' +
-        '<circle cx="37" cy="61" r="1.1" fill="#23252b"/><circle cx="63" cy="61" r="1.1" fill="#23252b"/>' +
-        '<rect x="44" y="48" width="12" height="10" rx="1.5" fill="' + t.fab + '" opacity="0.9"' + ST + '/>' +
-        '<path d="M35 40 L30 27 L41 39 Z" fill="url(#bbcIron)"' + ST + '/>' +
-        '<path d="M65 40 L70 27 L59 39 Z" fill="url(#bbcIron)"' + ST + '/>' +
-        '<circle cx="35" cy="46" r="8" fill="url(#bbcSteel)"' + ST + '/>' +
-        '<circle cx="65" cy="46" r="8" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<path d="M32 44 Q28 66 33 88 L67 88 Q72 66 68 44 Q50 36 32 44 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M32.5 56 h35 M32 70 h36 M33.5 81 h33" stroke="#0e1013" stroke-width="1.6" opacity="0.9"/>' +
+        '<circle cx="37" cy="50" r="1.3" fill="#0e1013"/><circle cx="63" cy="50" r="1.3" fill="#0e1013"/>' +
+        '<circle cx="35.5" cy="63" r="1.3" fill="#0e1013"/><circle cx="64.5" cy="63" r="1.3" fill="#0e1013"/>' +
+        '<circle cx="36" cy="76" r="1.3" fill="#0e1013"/><circle cx="64" cy="76" r="1.3" fill="#0e1013"/>' +
+        '<path d="M44 88 q-2 6 1 10 m4 -10 q0 5 2 9 m5 -9 q2 5 1 9" stroke="#3a3f4a" stroke-width="1.8" fill="none"/>' +
+        '<rect x="44" y="47" width="12" height="9" rx="1" fill="' + t.fab + '" opacity="0.9"' + ST + '/>' +
+        '<path d="M32 44 Q28 66 33 88" fill="none"' + RIM + '/>' +
+        '<path d="M33 41 L27 26 L40 38 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M67 41 L73 26 L60 38 Z" fill="url(#bbcIron)"' + ST + '/>' +
         '</g>' +
         '<g class="head">' +
-        '<path d="M39 34 L39 10 L44 10 L44 15 L47.5 15 L47.5 10 L52.5 10 L52.5 15 L56 15 L56 10 L61 10 L61 34 Q50 37.5 39 34 Z" fill="url(#bbcIron)"' + ST + '/>' +
-        '<rect x="41.5" y="22" width="17" height="4.4" rx="2" fill="#0e0f13"/>' +
-        '<g transform="translate(0,-0.5)">' + face(t, { eyeY: 24.4, noNose: true, noMouth: true }) + '</g>' +
-        '<path d="M39 19 h22" stroke="#2e3138" stroke-width="1.2"/>' +
-        '<rect x="47" y="28.5" width="6" height="1.6" fill="' + t.plume + '" opacity="0.9"/>' +
+        '<path d="M38 40 L38 12 L43.5 12 L43.5 17.5 L47 17.5 L47 12 L53 12 L53 17.5 L56.5 17.5 L56.5 12 L62 12 L62 40 Q50 44 38 40 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<rect x="40.5" y="23" width="19" height="5.5" rx="1.5" fill="#0b0c11"/>' +
+        eyes(t, 25.8, 4.5) +
+        '<path d="M38 20 h24 M38 34 h24" stroke="#0e1013" stroke-width="1.3"/>' +
+        '<circle cx="41" cy="31" r="1" fill="#0e1013"/><circle cx="59" cy="31" r="1" fill="#0e1013"/>' +
+        '<path d="M38 40 L38 12" fill="none"' + RIM + '/>' +
         '</g>' +
-        weaponArm('url(#bbcIron)', WEAPONS.hammer());
+        '<g class="arm-weapon">' +
+        '<path d="M64 48 Q75 60 71.5 74 l-7 2 Q66 62 58 51 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        WEAPONS.maul() +
+        '<circle cx="69" cy="77" r="5" fill="url(#bbcIron)"' + ST + '/>' +
+        '</g>';
     },
 
-    /* Bishop: robed cleric — tall mitre, grey beard, gilded crozier */
+    /* Bishop: hooded inquisitor — tall cowl, gold cross, gnarled crozier */
     b: function (t) {
       return '<g class="legs">' +
-        '<path d="M40 80 Q34 108 35 126 Q50 131 65 126 Q66 108 60 80 Z" fill="url(#bbcRobe)"' + ST + '/>' +
-        '<path d="M42 90 Q41 110 41.5 124 M58 90 Q59 110 58.5 124" stroke="#a2977f" stroke-width="0.9" opacity="0.8"/>' +
-        '<path d="M35.5 121 q14.5 5 29 0 l0 4.5 q-14.5 5 -29 0 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '<path d="M39 78 Q32 106 33 125 l4 -5 l4 7 l5 -7 l4 7 l4 -7 l5 7 l4 -7 l4 5 Q68 106 61 78 Z" fill="url(#bbcCloak)"' + ST + '/>' +
+        '<path d="M42 88 Q40 108 40.5 121 M58 88 Q60 108 59.5 121" stroke="#121017" stroke-width="1" opacity="0.8"/>' +
         '</g>' +
-        backArm('url(#bbcRobe)') +
+        backArm('url(#bbcCloak)') +
         '<g class="torso">' +
-        '<path d="M39 46 Q37 64 40 82 L60 82 Q63 64 61 46 Q50 41 39 46 Z" fill="url(#bbcRobe)"' + ST + '/>' +
-        '<path d="M46.5 44 L50 82 L53.5 44" fill="' + t.fab + '"' + ST + '/>' +
-        '<path d="M50 52 v7 M47.5 54.8 h5" stroke="url(#bbcGold)" stroke-width="1.6" stroke-linecap="round"/>' +
-        '<path d="M39 46 q11 -5 22 0 l0 4 q-11 -5 -22 0 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '<path d="M38 45 Q35.5 64 39 82 L61 82 Q64.5 64 62 45 Q50 39 38 45 Z" fill="url(#bbcCloak)"' + ST + '/>' +
+        '<path d="M46 44 L50 82 L54 44 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '<path d="M50 52 v8 M46.8 55.4 h6.4" stroke="url(#bbcGold)" stroke-width="1.8" stroke-linecap="round"/>' +
+        '<path d="M38 45 q12 -5.5 24 0 l-0.5 4.5 q-11.5 -5.5 -23 0 Z" fill="' + t.edge + '"' + ST + '/>' +
+        '<path d="M38 45 Q35.5 64 39 82" fill="none"' + RIM + '/>' +
         '</g>' +
-        '<g class="head">' + neck() + headBase(t) + face(t, { noMouth: true }) +
-        '<path d="M42 35 Q42 44 50 44.5 Q58 44 58 35 Q54 32.5 50 32.5 Q46 32.5 42 35 Z" fill="' + t.beard + '"' + ST + '/>' +
-        '<path d="M46 36.5 q4 2.5 8 0" stroke="#8f887a" stroke-width="0.7" fill="none" opacity="0.7"/>' +
-        '<path d="M42.5 18 L50 1.5 L57.5 18 Q50 21.5 42.5 18 Z" fill="' + t.fab + '"' + ST + '/>' +
-        '<path d="M50 4.5 V17 M46.7 9.5 h6.6" stroke="url(#bbcGold)" stroke-width="1.6" stroke-linecap="round"/>' +
-        '<path d="M42.3 16.5 q7.7 4 15.4 0 l0 3.6 q-7.7 4 -15.4 0 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<g class="head">' +
+        '<path d="M37 38 Q35 20 43 13 L50 -2 L57 13 Q65 20 63 38 Q56 42.5 50 42.5 Q44 42.5 37 38 Z" fill="url(#bbcCloak)"' + ST + '/>' +
+        '<path d="M50 2 L50 12 M46.6 5.8 h6.8" stroke="url(#bbcGold)" stroke-width="1.8" stroke-linecap="round"/>' +
+        '<path d="M41 34 Q41 20 50 17 Q59 20 59 34 Q54.5 38 50 38 Q45.5 38 41 34 Z" fill="#0b0c11"/>' +
+        eyes(t, 27) +
+        '<path d="M42.5 15 q7.5 -3.5 15 0 l-0.6 3.6 q-7 -3.2 -13.8 0 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<path d="M37 38 Q35 20 43 13" fill="none"' + RIM + '/>' +
         '</g>' +
-        weaponArm('url(#bbcRobe)', WEAPONS.crozier());
+        weaponArm('url(#bbcCloak)', WEAPONS.crozier());
     },
 
-    /* Queen: crowned regent — gown, jeweled scepter */
+    /* Queen: wraith-queen — tall crown, long veil, shadowed face */
     q: function (t) {
       return '<g class="legs">' +
-        '<path d="M41 74 Q30 106 31 127 Q50 132 69 127 Q70 106 59 74 Z" fill="' + t.fab + '"' + ST + '/>' +
-        '<path d="M44 84 Q40 108 40.5 125 M56 84 Q60 108 59.5 125" stroke="' + t.edge + '" stroke-width="0.9" opacity="0.75"/>' +
-        '<path d="M31.5 122 q18.5 6 37 0 l0.3 4 q-19 6 -37.6 0 Z" fill="url(#bbcGold)" opacity="0.85"/>' +
+        '<path d="M40 72 Q29 104 30 126 l5 -5 l5 7 l5 -7 l5 7 l5 -7 l5 7 l5 -7 l5 5 Q71 104 60 72 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '<path d="M44 84 Q40 106 40.5 122 M56 84 Q60 106 59.5 122" stroke="' + t.edge + '" stroke-width="1" opacity="0.8"/>' +
+        '<path d="M30.5 118 q19.5 6.5 39 0" stroke="url(#bbcGold)" stroke-width="1.6" fill="none" opacity="0.7"/>' +
         '</g>' +
+        '<path class="cape" d="M38 26 Q30 60 32 100 l6 -8 Q35 60 42 32 Z" fill="' + t.edge + '"' + ST + '/>' +
+        '<path class="cape" d="M62 26 Q70 60 68 100 l-6 -8 Q65 60 58 32 Z" fill="' + t.edge + '"' + ST + '/>' +
         backArm(t.fab) +
         '<g class="torso">' +
-        '<path d="M40 46 Q38 62 42 76 L58 76 Q62 62 60 46 Q50 41 40 46 Z" fill="' + t.fab + '"' + ST + '/>' +
-        '<path d="M46 48 L54 60 M54 48 L46 60 M46 60 L54 70 M54 60 L46 70" stroke="url(#bbcGold)" stroke-width="0.9" opacity="0.85"/>' +
-        '<path d="M40 46 q10 -4.5 20 0 l0 3.5 q-10 -4.5 -20 0 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<path d="M40 44 Q38 60 42 74 L58 74 Q62 60 60 44 Q50 38.5 40 44 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '<path d="M46 46 L54 58 M54 46 L46 58 M46 58 L54 70 M54 58 L46 70" stroke="url(#bbcGold)" stroke-width="0.9" opacity="0.7"/>' +
+        '<path d="M40 44 q10 -4.5 20 0 l0 3.6 q-10 -4.5 -20 0 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<path d="M40 44 Q38 60 42 74" fill="none"' + RIM + '/>' +
         '</g>' +
-        '<g class="head">' + neck() +
-        '<path d="M40 22 Q37 40 42 50 L45 47 Q42 36 43.5 24 Z" fill="' + t.hair + '"' + ST + '/>' +
-        '<path d="M60 22 Q63 40 58 50 L55 47 Q58 36 56.5 24 Z" fill="' + t.hair + '"' + ST + '/>' +
-        headBase(t) + face(t) +
-        '<path d="M41 22 Q42 13.5 50 13 Q58 13.5 59 22 Q50 18 41 22 Z" fill="' + t.hair + '"' + ST + '/>' +
-        '<path d="M42.5 15.5 L44 7.5 L47.5 12 L50 5.5 L52.5 12 L56 7.5 L57.5 15.5 Q50 12.5 42.5 15.5 Z" fill="url(#bbcGold)"' + ST + '/>' +
-        '<circle cx="44" cy="8.5" r="1.2" fill="#fff"/><circle cx="50" cy="6.5" r="1.3" fill="' + t.jewel + '"/><circle cx="56" cy="8.5" r="1.2" fill="#fff"/>' +
-        '<circle cx="50" cy="36.5" r="1.3" fill="' + t.jewel + '"/>' +
+        '<g class="head">' +
+        '<path d="M39 34 Q38 16 50 13 Q62 16 61 34 Q56 39.5 50 39.5 Q44 39.5 39 34 Z" fill="url(#bbcCloak)"' + ST + '/>' +
+        '<path d="M42 32 Q42 20 50 18 Q58 20 58 32 Q54 36 50 36 Q46 36 42 32 Z" fill="#0b0c11"/>' +
+        eyes(t, 26.5, 3.2) +
+        '<path d="M41.5 17 L42.5 3 L46 12 L50 1 L54 12 L57.5 3 L58.5 17 Q50 13 41.5 17 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<circle cx="42.6" cy="6" r="1.2" fill="' + t.jewel + '"/><circle cx="50" cy="4" r="1.4" fill="' + t.jewel + '"/><circle cx="57.4" cy="6" r="1.2" fill="' + t.jewel + '"/>' +
+        '<circle cx="50" cy="41.5" r="1.4" fill="' + t.jewel + '"/>' +
+        '<path d="M39 34 Q38 16 50 13" fill="none"' + RIM + '/>' +
         '</g>' +
         weaponArm(t.fab, WEAPONS.scepter(t));
     },
 
-    /* King: fur mantle, great crown, full beard, longsword */
+    /* King Beardy: great crown, fur mantle, the long beard, a greatsword */
     k: function (t) {
-      return legs(t, 'cloth') +
-        '<path class="cape" d="M36 47 Q28 80 31 112 L39 106 Q36 78 41 52 Z" fill="' + t.edge + '"' + ST + '/>' +
-        backArm(t.fab) +
+      return legs(t.fab) + cape(t, true) +
         '<g class="torso">' +
-        '<path d="M37 46 Q34 66 38 84 L62 84 Q66 66 63 46 Q50 40 37 46 Z" fill="' + t.fab + '"' + ST + '/>' +
-        '<rect x="37" y="74" width="26" height="4.5" fill="url(#bbcLeather)"' + ST + '/>' +
-        '<rect x="47" y="73.5" width="6" height="5.5" rx="1" fill="url(#bbcGold)"' + ST + '/>' +
-        '<path d="M37 46 Q50 41 63 46 L61.5 56 Q50 50 38.5 56 Z" fill="url(#bbcFur)"' + ST + '/>' +
-        '<circle cx="42" cy="50" r="0.8" fill="#8d8577"/><circle cx="50" cy="47.5" r="0.8" fill="#8d8577"/><circle cx="58" cy="50" r="0.8" fill="#8d8577"/>' +
+        '<path d="M36 45 Q33 66 37 85 L63 85 Q67 66 64 45 Q50 38 36 45 Z" fill="' + t.fab + '"' + ST + '/>' +
+        '<rect x="36" y="74" width="28" height="5" fill="url(#bbcLeather)"' + ST + '/>' +
+        '<rect x="46.8" y="73.4" width="6.4" height="6.2" rx="1" fill="url(#bbcGold)"' + ST + '/>' +
+        '<path d="M36 45 Q50 39.5 64 45 L62 56 Q50 50 38 56 Z" fill="url(#bbcFur)"' + ST + '/>' +
+        '<circle cx="42" cy="49.5" r="0.9" fill="#4e4a41"/><circle cx="50" cy="47" r="0.9" fill="#4e4a41"/><circle cx="58" cy="49.5" r="0.9" fill="#4e4a41"/>' +
+        '<path d="M36 45 Q33 66 37 85" fill="none"' + RIM + '/>' +
         '</g>' +
-        '<g class="head">' + neck() + headBase(t) + face(t, { noMouth: true }) +
-        '<path d="M40.5 30 Q39 46 50 47.5 Q61 46 59.5 30 Q55 34.5 50 34.5 Q45 34.5 40.5 30 Z" fill="' + t.beard + '"' + ST + '/>' +
-        '<path d="M45 36 q5 3 10 0 M47 42 q3 1.6 6 0" stroke="#9a917f" stroke-width="0.7" fill="none" opacity="0.65"/>' +
-        '<path d="M41 20 Q42 12.5 50 12 Q58 12.5 59 20 Q50 16.5 41 20 Z" fill="' + t.hair + '"/>' +
-        '<path d="M41.5 16 L42.5 5 L46.5 10.5 L50 3 L53.5 10.5 L57.5 5 L58.5 16 Q50 12.5 41.5 16 Z" fill="url(#bbcGold)"' + ST + '/>' +
-        '<rect x="41.8" y="14.2" width="16.4" height="3.4" rx="1.5" fill="url(#bbcGold)"' + ST + '/>' +
-        '<circle cx="45" cy="15.9" r="1.1" fill="' + t.jewel + '"/><circle cx="50" cy="15.9" r="1.1" fill="#fff"/><circle cx="55" cy="15.9" r="1.1" fill="' + t.jewel + '"/>' +
-        '<circle cx="50" cy="5.5" r="1.4" fill="' + t.jewel + '"/>' +
+        '<g class="head">' +
+        '<path d="M39 33 Q38 15 50 12 Q62 15 61 33 Q55 38 50 38 Q45 38 39 33 Z" fill="url(#bbcCloak)"' + ST + '/>' +
+        '<path d="M42 30 Q42 19 50 17 Q58 19 58 30 Q54 33.5 50 33.5 Q46 33.5 42 30 Z" fill="#0b0c11"/>' +
+        eyes(t, 25) +
+        '<path d="M40.5 31 Q38.5 47 50 49 Q61.5 47 59.5 31 Q55 36 50 36 Q45 36 40.5 31 Z" fill="' + t.beard + '"' + ST + '/>' +
+        '<path d="M45 37 q5 3 10 0 M46.5 43 q3.5 2 7 0" stroke="#7c7568" stroke-width="0.8" fill="none" opacity="0.7"/>' +
+        '<path d="M40.5 16 L41.5 2 L46 9.5 L50 0 L54 9.5 L58.5 2 L59.5 16 Q50 12 40.5 16 Z" fill="url(#bbcGold)"' + ST + '/>' +
+        '<rect x="40.8" y="14" width="18.4" height="3.8" rx="1.6" fill="url(#bbcGold)"' + ST + '/>' +
+        '<circle cx="44.5" cy="15.9" r="1.2" fill="' + t.jewel + '"/><circle cx="50" cy="15.9" r="1.2" fill="#d8dce4"/><circle cx="55.5" cy="15.9" r="1.2" fill="' + t.jewel + '"/>' +
+        '<circle cx="50" cy="2.5" r="1.5" fill="' + t.jewel + '"/>' +
+        '<path d="M39 33 Q38 15 50 12" fill="none"' + RIM + '/>' +
         '</g>' +
-        weaponArm(t.fab, WEAPONS.sword(), 69, 80);
+        weaponArm(t.fab, WEAPONS.greatsword(), 69, 82);
     }
   };
 
   /* Dirt, soot and old scratches — every soldier has seen campaigns. */
   function grime() {
-    return '<g opacity="0.24" fill="#120e0a">' +
+    return '<g opacity="0.22" fill="#0c0a08">' +
       '<ellipse cx="44" cy="66" rx="4.5" ry="2.4"/>' +
       '<ellipse cx="57" cy="79" rx="3.4" ry="1.9"/>' +
       '<ellipse cx="47" cy="99" rx="3.8" ry="2"/>' +
       '<ellipse cx="55" cy="114" rx="3" ry="1.7"/>' +
-      '<path d="M42 55 l7 6 M57 58 l-6 8 M46 86 l5 5" stroke="#120e0a" stroke-width="1" fill="none"/>' +
+      '<path d="M42 55 l7 6 M57 58 l-6 8 M46 86 l5 5" stroke="#0c0a08" stroke-width="1" fill="none"/>' +
       '</g>';
   }
 
@@ -323,7 +341,7 @@ var Characters = (function () {
   function svg(type, color, cls) {
     var t = TEAM[color];
     return '<svg class="char char-' + type + ' team-' + color + (cls ? ' ' + cls : '') + '" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">' +
-      '<ellipse class="shadow" cx="50" cy="131" rx="21" ry="4.5" fill="#000" opacity="0.22"/>' +
+      '<ellipse class="shadow" cx="50" cy="131" rx="22" ry="4.5" fill="#000" opacity="0.35"/>' +
       '<g class="body-root"><g transform="translate(50 0) scale(1.18 1) translate(-50 0)">' +
       BUILDERS[type](t) + grime() + '</g></g></svg>';
   }
@@ -339,8 +357,8 @@ var Characters = (function () {
     k: 'steps one square'
   };
   var FLAVOR = {
-    p: 'Pikeman Pokey', n: 'Sir Bonk', b: 'Brother Whack',
-    r: 'Ironclad Rook', q: 'Queen Zapper', k: 'King Beardy'
+    p: 'The Footman', n: 'The Horned Knight', b: 'The Inquisitor',
+    r: 'The Executioner', q: 'The Wraith Queen', k: 'King Beardy'
   };
 
   return { svg: svg, defs: defs, NAMES: NAMES, GLYPH: GLYPH, MOVES_HINT: MOVES_HINT, FLAVOR: FLAVOR, TEAM: TEAM };
