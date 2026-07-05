@@ -313,9 +313,16 @@
     if (node) {
       if (victim) {
         var vicNode = pieceAt(victimSq);
+        var neighbors = [];
+        [-1, 1, -8, 8].forEach(function (d) {
+          var n = victimSq + d;
+          if (n < 0 || n > 63) return;
+          if (Math.abs(d) === 1 && Math.floor(n / 8) !== Math.floor(victimSq / 8)) return;
+          neighbors.push(cells[n]);
+        });
         seq = seq
           .then(function () { return slideBeside(node, move.from, victimSq); })
-          .then(function () { return Battle.fightOnBoard(node, vicNode, attacker.type); })
+          .then(function () { return Battle.fightOnBoard(node, vicNode, attacker.type, cells[victimSq], neighbors); })
           .then(function () { return slide(node, move.to); });
       } else {
         seq = seq.then(function () { return slide(node, move.to); });

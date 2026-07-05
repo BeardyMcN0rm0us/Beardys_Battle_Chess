@@ -18,28 +18,28 @@ var Characters = (function () {
 
   function defs() {
     return '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>' +
-      grad('bbcSteel', [[0, '#eef1f6'], [0.5, '#aeb6c4'], [1, '#6a7280']]) +
-      grad('bbcSteelH', [[0, '#f6f8fb'], [0.55, '#c2c9d5'], [1, '#8b93a2']], 1, 0.3) +
-      grad('bbcIron', [[0, '#7d828e'], [0.55, '#4e525c'], [1, '#2e3138']]) +
-      grad('bbcGold', [[0, '#f6dd8c'], [0.5, '#cba22a'], [1, '#8a6d14']]) +
-      grad('bbcLeather', [[0, '#96714b'], [0.55, '#64492f'], [1, '#40301e']]) +
-      grad('bbcWood', [[0, '#8a663d'], [1, '#54401f']], 1, 0) +
-      grad('bbcBlade', [[0, '#f4f6fa'], [0.5, '#c3cad6'], [1, '#8b93a2']], 1, 0) +
-      grad('bbcSkin', [[0, '#ecc9a3'], [1, '#cfa075']]) +
-      grad('bbcFabW', [[0, '#4d74bd'], [0.55, '#2d4a7d'], [1, '#1a2c4e']]) +
-      grad('bbcFabB', [[0, '#b64d4d'], [0.55, '#7d2d2d'], [1, '#4e1a1a']]) +
-      grad('bbcRobe', [[0, '#efe9dc'], [0.6, '#cfc6b2'], [1, '#a2977f']]) +
-      grad('bbcFur', [[0, '#f4f1ea'], [1, '#c9c2b4']]) +
+      grad('bbcSteel', [[0, '#b9bfca'], [0.5, '#6f7683'], [1, '#3b404a']]) +
+      grad('bbcSteelH', [[0, '#cdd2db'], [0.55, '#8b93a2'], [1, '#5a6170']], 1, 0.3) +
+      grad('bbcIron', [[0, '#565b66'], [0.55, '#33363e'], [1, '#191b20']]) +
+      grad('bbcGold', [[0, '#c9a84c'], [0.5, '#8a6d2a'], [1, '#4e3d12']]) +
+      grad('bbcLeather', [[0, '#6b4d31'], [0.55, '#453120'], [1, '#251a10']]) +
+      grad('bbcWood', [[0, '#5c452a'], [1, '#312312']], 1, 0) +
+      grad('bbcBlade', [[0, '#dfe3ea'], [0.5, '#98a0ae'], [1, '#5f6673']], 1, 0) +
+      grad('bbcSkin', [[0, '#d4ad85'], [1, '#a67c56']]) +
+      grad('bbcFabW', [[0, '#33507f'], [0.55, '#1c2f52'], [1, '#0d1626']]) +
+      grad('bbcFabB', [[0, '#8f3030'], [0.55, '#5c1c1c'], [1, '#300d0d']]) +
+      grad('bbcRobe', [[0, '#c9c2b0'], [0.6, '#9a927e'], [1, '#655e4f']]) +
+      grad('bbcFur', [[0, '#d2ccc0'], [1, '#918a7c']]) +
       '</defs></svg>';
   }
 
-  var ST = ' stroke="#15161c" stroke-width="0.8" stroke-opacity="0.5"';
+  var ST = ' stroke="#0a0b10" stroke-width="1" stroke-opacity="0.7"';
 
   var TEAM = {
-    w: { fab: 'url(#bbcFabW)', edge: '#1a2c4e', plume: '#4d74bd', jewel: '#3f79d8',
-         glyphColor: '#9db8e8', hair: '#6b5236', beard: '#d9d2c4' },
-    b: { fab: 'url(#bbcFabB)', edge: '#4e1a1a', plume: '#b64d4d', jewel: '#d33f4c',
-         glyphColor: '#e89d9d', hair: '#3a2a1c', beard: '#5a4a38' }
+    w: { fab: 'url(#bbcFabW)', edge: '#0d1626', plume: '#3a5c94', jewel: '#2f5da8',
+         glyphColor: '#7f9ccb', hair: '#4a3a26', beard: '#b8b2a4' },
+    b: { fab: 'url(#bbcFabB)', edge: '#300d0d', plume: '#8f3030', jewel: '#a32633',
+         glyphColor: '#c98080', hair: '#241a10', beard: '#453629' }
   };
 
   /* ---------- shared body parts (viewBox 0 0 100 140, ground y≈132) ---------- */
@@ -190,6 +190,8 @@ var Characters = (function () {
         '<path d="M45 46 L50 62 L55 46" stroke="#8b93a2" stroke-width="0.9" fill="none" opacity="0.8"/>' +
         '<rect x="44" y="52" width="12" height="18" rx="2" fill="' + t.fab + '" opacity="0.92"' + ST + '/>' +
         '<path d="M39.5 80 q10.5 5 21 0 l-1 7 q-9.5 4 -19 0 Z" fill="url(#bbcSteel)"' + ST + '/>' +
+        '<path d="M37 42 L33.5 31 L42 41 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M63 42 L66.5 31 L58 41 Z" fill="url(#bbcIron)"' + ST + '/>' +
         '<circle cx="37" cy="47" r="6.8" fill="url(#bbcSteelH)"' + ST + '/>' +
         '<circle cx="63" cy="47" r="6.8" fill="url(#bbcSteelH)"' + ST + '/>' +
         '</g>' +
@@ -217,6 +219,8 @@ var Characters = (function () {
         '<circle cx="38" cy="51" r="1.1" fill="#23252b"/><circle cx="62" cy="51" r="1.1" fill="#23252b"/>' +
         '<circle cx="37" cy="61" r="1.1" fill="#23252b"/><circle cx="63" cy="61" r="1.1" fill="#23252b"/>' +
         '<rect x="44" y="48" width="12" height="10" rx="1.5" fill="' + t.fab + '" opacity="0.9"' + ST + '/>' +
+        '<path d="M35 40 L30 27 L41 39 Z" fill="url(#bbcIron)"' + ST + '/>' +
+        '<path d="M65 40 L70 27 L59 39 Z" fill="url(#bbcIron)"' + ST + '/>' +
         '<circle cx="35" cy="46" r="8" fill="url(#bbcSteel)"' + ST + '/>' +
         '<circle cx="65" cy="46" r="8" fill="url(#bbcSteel)"' + ST + '/>' +
         '</g>' +
@@ -304,13 +308,24 @@ var Characters = (function () {
     }
   };
 
+  /* Dirt, soot and old scratches — every soldier has seen campaigns. */
+  function grime() {
+    return '<g opacity="0.24" fill="#120e0a">' +
+      '<ellipse cx="44" cy="66" rx="4.5" ry="2.4"/>' +
+      '<ellipse cx="57" cy="79" rx="3.4" ry="1.9"/>' +
+      '<ellipse cx="47" cy="99" rx="3.8" ry="2"/>' +
+      '<ellipse cx="55" cy="114" rx="3" ry="1.7"/>' +
+      '<path d="M42 55 l7 6 M57 58 l-6 8 M46 86 l5 5" stroke="#120e0a" stroke-width="1" fill="none"/>' +
+      '</g>';
+  }
+
   /* Build a full character SVG string. */
   function svg(type, color, cls) {
     var t = TEAM[color];
     return '<svg class="char char-' + type + ' team-' + color + (cls ? ' ' + cls : '') + '" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">' +
       '<ellipse class="shadow" cx="50" cy="131" rx="21" ry="4.5" fill="#000" opacity="0.22"/>' +
       '<g class="body-root"><g transform="translate(50 0) scale(1.18 1) translate(-50 0)">' +
-      BUILDERS[type](t) + '</g></g></svg>';
+      BUILDERS[type](t) + grime() + '</g></g></svg>';
   }
 
   var NAMES = { p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen', k: 'King' };
