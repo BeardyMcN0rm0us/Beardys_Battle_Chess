@@ -133,7 +133,6 @@
       node.dataset.i = i;
       node.innerHTML = '<div class="stand">' + Characters.svg(p.type, p.color) +
         '<span class="piece-badge badge-' + p.color + '">' + Characters.GLYPH[p.type] + '</span></div>';
-      node.querySelector('.body-root').style.animationDelay = (-(i % 7) * 0.3) + 's';
       positionPiece(node, i);
     }
   }

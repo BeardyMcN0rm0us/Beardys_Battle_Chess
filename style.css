@@ -206,7 +206,8 @@ button { font-family: inherit; cursor: pointer; }
 
 .piece {
   position: absolute;
-  transition: left .34s ease, top .34s ease, width .34s ease, height .34s ease;
+  transition: left .55s cubic-bezier(.3, .1, .25, 1), top .55s cubic-bezier(.3, .1, .25, 1),
+    width .55s cubic-bezier(.3, .1, .25, 1), height .55s cubic-bezier(.3, .1, .25, 1);
   pointer-events: none;
 }
 .piece .stand {
@@ -225,13 +226,6 @@ button { font-family: inherit; cursor: pointer; }
 }
 .badge-w { color: #9db8e8; }
 .badge-b { color: #e89d9d; }
-
-/* gentle idle bob for everyone on the board */
-.char .body-root { animation: bob 2.4s ease-in-out infinite; }
-@keyframes bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
 
 /* square splats left behind after a capture */
 .square-splat {
@@ -322,12 +316,24 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* weapon swing — rotation about the shoulder (svg user units) */
-.char .arm-weapon { transform-origin: 64px 50px; }
+.char .arm-weapon { transform-origin: 64px 46px; }
 .piece.strike .arm-weapon { animation: swing .3s ease-in forwards; }
 @keyframes swing {
-  0% { transform: rotate(8deg); }
-  35% { transform: rotate(38deg); }
-  100% { transform: rotate(-118deg); }
+  0% { transform: rotate(4deg); }
+  35% { transform: rotate(42deg); }
+  100% { transform: rotate(-128deg); }
+}
+.piece { --lg: 9%; }
+.piece.face-l { --lg: -9%; }
+.piece.strike .stand { animation: lunge .34s ease-in; }
+@keyframes lunge {
+  0%, 100% { transform: translateX(0); }
+  45% { transform: translateX(var(--lg)); }
+}
+.piece.fighting.strike .stand { animation: lungeBig .34s ease-in; }
+@keyframes lungeBig {
+  0%, 100% { transform: scale(1.12) translateX(0); }
+  45% { transform: scale(1.12) translateX(var(--lg)); }
 }
 
 .piece.hit svg { animation: hitFlash .4s ease-out; }
@@ -479,5 +485,5 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .char .body-root, .fighter .body-root { animation: none !important; }
+  .piece.strike .stand { animation: none !important; }
 }
