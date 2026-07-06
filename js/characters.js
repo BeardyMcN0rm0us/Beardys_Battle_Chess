@@ -374,7 +374,25 @@ var Characters = (function () {
 
   /* Sprite mode: photoreal PNGs in assets/pieces/ replace the vector art. */
   var spriteMode = false;
+  var variantOk = {};
   function useSprites(on) { spriteMode = !!on; }
+
+  /* Probe for optional action frames (attack / corpse) once, in background. */
+  function probeVariants() {
+    ['w', 'b'].forEach(function (c) {
+      ['p', 'n', 'b', 'r', 'q', 'k'].forEach(function (t) {
+        ['atk', 'dead'].forEach(function (s) {
+          var im = new Image();
+          im.onload = function () { variantOk[c + '_' + t + '_' + s] = true; };
+          im.src = 'assets/pieces/' + c + '_' + t + '_' + s + '.png';
+        });
+      });
+    });
+  }
+  function variant(color, type, sfx) {
+    return variantOk[color + '_' + type + '_' + sfx]
+      ? 'assets/pieces/' + color + '_' + type + '_' + sfx + '.png' : null;
+  }
 
   /* Build a full character figure (HD sprite if available, vector fallback). */
   function svg(type, color, cls) {
@@ -403,5 +421,5 @@ var Characters = (function () {
     r: 'The Siege Golem', q: 'The Wraith Queen', k: 'King Beardy'
   };
 
-  return { svg: svg, defs: defs, useSprites: useSprites, NAMES: NAMES, GLYPH: GLYPH, MOVES_HINT: MOVES_HINT, FLAVOR: FLAVOR, TEAM: TEAM };
+  return { svg: svg, defs: defs, useSprites: useSprites, probeVariants: probeVariants, variant: variant, NAMES: NAMES, GLYPH: GLYPH, MOVES_HINT: MOVES_HINT, FLAVOR: FLAVOR, TEAM: TEAM };
 })();

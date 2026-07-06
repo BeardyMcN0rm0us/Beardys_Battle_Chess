@@ -58,3 +58,22 @@ your art everywhere: board, menu, academy, everything.
 
 Tip: most generators produce backgrounds even when asked not to — use
 any free "remove background" tool on the results before uploading.
+
+## Optional: action frames (real animation)
+
+The 12 base images animate puppet-style (lunge, recoil, knockback,
+blood). For true frame animation, add these OPTIONAL extra images —
+the game detects and uses whichever exist, per piece:
+
+- `{color}_{piece}_atk.png` — same character **mid-swing**, weapon
+  raised/striking. Shown for a split second on every hit.
+  Prompt: take the base prompt and add
+  `mid-attack, weapon raised overhead mid-swing, aggressive lunge`.
+- `{color}_{piece}_dead.png` — same character **lying dead on the
+  ground** (horizontal composition, still transparent background).
+  Replaces the topple animation with a real corpse.
+  Prompt: base prompt + `lying dead on the ground, fallen, top-down
+  slight angle, weapon dropped beside the body`.
+
+Example: `w_n_atk.png`, `w_n_dead.png` for the white knight.
+Add them for any subset of pieces — missing frames fall back cleanly.

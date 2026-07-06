@@ -835,7 +835,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     // if HD sprites are present in assets/pieces/, use them everywhere
     var probe = new Image();
-    probe.onload = function () { Characters.useSprites(true); boot(); };
+    probe.onload = function () { Characters.useSprites(true); Characters.probeVariants(); boot(); };
     probe.onerror = function () { boot(); };
     probe.src = 'assets/pieces/w_p.png?t=' + Date.now();
   });

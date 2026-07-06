@@ -56,11 +56,28 @@ var Battle = (function () {
     p.style.top = (30 + Math.random() * 40) + '%';
   }
 
+  function pieceInfo(node) {
+    var img = node && node.querySelector('img.figure');
+    if (!img) return null;
+    var mm = (img.getAttribute('src') || '').match(/([wb])_([pnbrqk])/);
+    return mm ? { img: img, color: mm[1], type: mm[2] } : null;
+  }
+
   function restrike(node) {
     if (!node) return;
     node.classList.remove('strike');
     void node.offsetWidth; // restart the swing animation
     node.classList.add('strike');
+    // photoreal mode: flash the mid-swing action frame if one exists
+    var info = pieceInfo(node);
+    if (info) {
+      var atk = Characters.variant(info.color, info.type, 'atk');
+      if (atk) {
+        var back = info.img.src;
+        info.img.src = atk;
+        setTimeout(function () { info.img.src = back; }, 300);
+      }
+    }
   }
 
   /* Fight on the square. attNode has stepped up beside vicNode already.
@@ -141,6 +158,15 @@ var Battle = (function () {
             vicSvg.classList.add('dead');
             vicSvg.style.setProperty('--kb', (dir * 14) + 'px');
             vicSvg.style.setProperty('--dir', dir);
+          }
+          // photoreal mode: swap to the fallen-corpse frame instead of toppling
+          var vinfo = pieceInfo(vicNode);
+          if (vinfo) {
+            var corpse = Characters.variant(vinfo.color, vinfo.type, 'dead');
+            if (corpse) {
+              vinfo.img.src = corpse;
+              vinfo.img.classList.add('corpse');
+            }
           }
         }
         if (gore) {

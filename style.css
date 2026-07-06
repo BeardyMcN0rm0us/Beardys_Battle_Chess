@@ -515,3 +515,14 @@ button { font-family: inherit; cursor: pointer; }
 .review-table td { padding: 2.5px 12px; text-align: left; }
 .rv-num { color: var(--muted); }
 .rv-bad { color: #ff6a5e; font-weight: 700; }
+
+/* corpse frame: already lying down — sink and fade instead of toppling */
+.piece.dying .figure.corpse {
+  animation: corpseFade 1.2s ease-in forwards;
+  transform-origin: 50% 94%;
+}
+@keyframes corpseFade {
+  0% { transform: translateX(var(--kb, 0)); opacity: 1; }
+  75% { transform: translateX(var(--kb, 0)); opacity: .95; }
+  100% { transform: translateX(var(--kb, 0)) translateY(4px); opacity: 0; }
+}
