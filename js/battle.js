@@ -69,7 +69,7 @@ var Battle = (function () {
     return new Promise(function (resolve) {
       var gore = goreOn();
       var stand = vicNode && vicNode.querySelector('.stand');
-      var vicSvg = vicNode && vicNode.querySelector('svg');
+      var vicSvg = vicNode && vicNode.querySelector('.figure');
       var wrap = document.getElementById('board-wrap');
       var dir = 1;
       if (attNode && vicNode) {

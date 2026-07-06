@@ -372,10 +372,18 @@ var Characters = (function () {
       '</g>';
   }
 
-  /* Build a full character SVG string. */
+  /* Sprite mode: photoreal PNGs in assets/pieces/ replace the vector art. */
+  var spriteMode = false;
+  function useSprites(on) { spriteMode = !!on; }
+
+  /* Build a full character figure (HD sprite if available, vector fallback). */
   function svg(type, color, cls) {
     var t = TEAM[color];
-    return '<svg class="char char-' + type + ' team-' + color + (cls ? ' ' + cls : '') + '" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">' +
+    if (spriteMode) {
+      return '<img class="char figure sprite char-' + type + ' team-' + color + (cls ? ' ' + cls : '') +
+        '" src="assets/pieces/' + color + '_' + type + '.png" alt="' + NAMES[type] + '" draggable="false">';
+    }
+    return '<svg class="char figure char-' + type + ' team-' + color + (cls ? ' ' + cls : '') + '" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">' +
       '<g class="body-root"><g transform="translate(50 0) scale(1.12 1) translate(-50 0)">' +
       BUILDERS[type](t) + grime() + '</g></g></svg>';
   }
@@ -395,5 +403,5 @@ var Characters = (function () {
     r: 'The Siege Golem', q: 'The Wraith Queen', k: 'King Beardy'
   };
 
-  return { svg: svg, defs: defs, NAMES: NAMES, GLYPH: GLYPH, MOVES_HINT: MOVES_HINT, FLAVOR: FLAVOR, TEAM: TEAM };
+  return { svg: svg, defs: defs, useSprites: useSprites, NAMES: NAMES, GLYPH: GLYPH, MOVES_HINT: MOVES_HINT, FLAVOR: FLAVOR, TEAM: TEAM };
 })();

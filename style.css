@@ -216,8 +216,12 @@ button { font-family: inherit; cursor: pointer; }
   transform-origin: 50% 96%;
 }
 .piece.fighting .stand { transform: scale(1.12); }
-.piece.face-l .stand svg { transform: scaleX(-1); }
+.piece.face-l .stand .figure { transform: scaleX(-1); }
 .piece svg { width: 100%; height: 100%; overflow: visible; }
+.piece img.figure {
+  width: 100%; height: 100%; object-fit: contain; object-position: bottom;
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,.55));
+}
 .piece-badge {
   position: absolute; top: 6%; right: 2%;
   font-size: clamp(9px, 2.1vmin, 16px); line-height: 1;
@@ -337,7 +341,7 @@ button { font-family: inherit; cursor: pointer; }
   45% { transform: scale(1.12) translateX(var(--lg)); }
 }
 
-.piece.hit svg { animation: hitFlash .4s ease-out; }
+.piece.hit .figure { animation: hitFlash .4s ease-out; }
 @keyframes hitFlash {
   0% { filter: brightness(2.4) saturate(2); }
   60% { filter: brightness(1.5); }
@@ -345,7 +349,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 .piece.dying { transition: none; }
-.piece.dying svg {
+.piece.dying .figure {
   animation: boardFall 1s ease-in forwards;
   transform-origin: 50% 94%;
 }
