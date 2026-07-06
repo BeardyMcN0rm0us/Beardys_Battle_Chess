@@ -289,9 +289,10 @@ button { font-family: inherit; cursor: pointer; }
 .lesson-stars .star.lit, .star-row .star.lit { color: var(--gold); text-shadow: 0 0 8px rgba(246,196,69,.6); }
 
 /* ---------- puzzles ---------- */
-#puzzle-grid {
-  max-width: 700px; margin: 0 auto; padding-bottom: 40px;
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;
+#puzzle-grid { max-width: 700px; margin: 0 auto; padding-bottom: 40px; }
+.pz-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px; margin-bottom: 10px;
 }
 .puzzle-card {
   background: linear-gradient(180deg, var(--panel2), var(--panel));
@@ -487,3 +488,26 @@ button { font-family: inherit; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .piece.strike .stand { animation: none !important; }
 }
+
+/* ---------- premier extras ---------- */
+#move-list {
+  min-height: 44px; max-height: 132px; overflow-y: auto;
+  background: rgba(0,0,0,.28); border-radius: 10px; padding: 8px 10px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12.5px; line-height: 1.8; color: var(--ink); word-spacing: 2px;
+}
+.mv-num { color: var(--muted); }
+#academy-stats { display: flex; gap: 10px; justify-content: center; margin: 0 0 16px; flex-wrap: wrap; }
+.chip {
+  background: var(--panel); border: 1px solid #3d4a6b; border-radius: 20px;
+  padding: 5px 14px; font-size: 13.5px; font-weight: 700;
+}
+.unit-head { margin: 24px 0 10px; text-align: center; }
+.unit-head b { display: block; font-size: 17px; color: var(--gold); letter-spacing: .5px; }
+.unit-head span { color: var(--muted); font-size: 13px; }
+.xp-line { color: var(--gold) !important; font-weight: 800; font-size: 18px; }
+.review-scroll { max-height: 42vh; overflow-y: auto; margin-top: 10px; }
+.review-table { margin: 0 auto; border-collapse: collapse; font-family: ui-monospace, monospace; font-size: 14px; }
+.review-table td { padding: 2.5px 12px; text-align: left; }
+.rv-num { color: var(--muted); }
+.rv-bad { color: #ff6a5e; font-weight: 700; }

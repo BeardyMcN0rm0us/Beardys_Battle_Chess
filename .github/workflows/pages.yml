@@ -27,6 +27,8 @@ jobs:
         run: |
           rm -rf .git
           touch .nojekyll
+          # cache-bust every asset with the commit hash so browsers always get fresh files
+          sed -i "s|\(src=\"js/[^\"]*\.js\)\"|\1?v=${GITHUB_SHA::7}\"|g; s|\(href=\"style\.css\)\"|\1?v=${GITHUB_SHA::7}\"|g" index.html
           git init -b gh-pages
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

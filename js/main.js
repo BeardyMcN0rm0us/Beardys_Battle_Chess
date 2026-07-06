@@ -141,6 +141,34 @@
     return pieceLayer.querySelector('.piece[data-i="' + i + '"]');
   }
 
+  var SAN_L = { p: '', n: 'N', b: 'B', r: 'R', q: 'Q', k: 'K' };
+  function sanOf(pre, move, post) {
+    var s;
+    if (move.castle) s = move.castle === 'K' ? 'O-O' : 'O-O-O';
+    else {
+      var cap = move.captured ? 'x' : '';
+      if (move.piece === 'p') s = (cap ? Engine.sqName(move.from)[0] : '') + cap + Engine.sqName(move.to);
+      else s = SAN_L[move.piece] + cap + Engine.sqName(move.to);
+      if (move.promo) s += '=' + SAN_L[move.promo];
+    }
+    var st = Engine.status(post);
+    if (st === 'checkmate') s += '#';
+    else if (Engine.inCheck(post, post.turn)) s += '+';
+    return s;
+  }
+
+  function renderMoveList() {
+    var ml = $('#move-list');
+    if (!ml || !G) return;
+    var out = '';
+    for (var i = 0; i < G.san.length; i += 2) {
+      out += '<span class="mv-num">' + (i / 2 + 1) + '.</span> ' + G.san[i] +
+        (G.san[i + 1] ? ' ' + G.san[i + 1] : '') + '  ';
+    }
+    ml.innerHTML = out || '<span class="mv-num">the war has not begun</span>';
+    ml.scrollTop = ml.scrollHeight;
+  }
+
   function clearMarks() {
     cells.forEach(function (c) {
       c.classList.remove('sel', 'move', 'take', 'last', 'check', 'hint');
@@ -332,8 +360,11 @@
         G.captured[victim.color].push(victim.type);
         Battle.squareSplat(cells[victimSq]);
       }
-      G.history.push(G.state);
-      G.state = Engine.makeMove(G.state, move);
+      var pre = G.state;
+      G.history.push(pre);
+      G.state = Engine.makeMove(pre, move);
+      G.san.push(sanOf(pre, move, G.state));
+      renderMoveList();
       renderPieces();
       G.busy = false;
       return move;
@@ -354,10 +385,12 @@
       history: [],
       captured: { w: [], b: [] },
       moveCount: 0,
+      san: [],
       over: false, busy: false,
       loose: !!(opts.lesson && opts.lesson.kind === 'captureAll'),
       selected: null, targets: []
     };
+    Lessons.touchStreak();
     if (G.opponent) Opponents.preload(G.opponent);
     layoutCells();
     renderPieces();
@@ -370,12 +403,14 @@
       G.lesson.name;
     $('#lesson-tip').style.display = (G.lesson || G.puzzle) ? '' : 'none';
     $('#lesson-tip').textContent = G.lesson ? G.lesson.tip :
-      G.puzzle ? 'White to move. Deliver checkmate in ONE move!' : '';
+      G.puzzle ? (G.puzzle.depth === 2 ? 'Force checkmate in TWO moves — the enemy plays its best defence!'
+        : 'White to move. Deliver checkmate in ONE move!') : '';
     $('#btn-undo').style.display = (G.mode === 'ai' || G.mode === '2p') ? '' : 'none';
     $('#btn-hint').style.display = (G.mode === 'ai' || G.mode === '2p') ? '' : 'none';
     $('#btn-restart').style.display = (G.mode === 'lesson' || G.mode === 'puzzle') ? '' : 'none';
 
     updateHud();
+    renderMoveList();
     if (G.mode === 'ai' && G.playerColor === 'b') aiTurn();
   }
 
@@ -399,18 +434,34 @@
     }
     if (G.mode === 'puzzle' || (G.mode === 'lesson' && G.lesson.kind === 'mate1')) {
       updateHud(move);
-      if (Engine.status(G.state) === 'checkmate') {
+      var pzDepth = G.puzzle ? (G.puzzle.depth || 1) : 1;
+      var st0 = Engine.status(G.state);
+      if (st0 === 'checkmate') {
         if (G.puzzle) Lessons.setPuzzleDone(G.puzzle.id);
         else Lessons.setLessonStars(G.lesson.id, 3);
         lessonWin(3);
+      } else if (pzDepth === 2 && G.moveCount < 2 && (st0 === 'normal' || st0 === 'check')) {
+        // the defender fights back with its best move
+        G.busy = true;
+        setTimeout(function () {
+          var reply = AI.bestMove(G.state, 3);
+          if (!reply) { G.busy = false; return; }
+          animateMove(reply).then(function () { updateHud(reply); });
+        }, 300);
       } else {
-        setStatus('Not quite — that\'s not mate. Try again!');
+        setStatus(pzDepth === 2 ? 'The mate slipped away — the position resets!'
+          : 'Not quite — that\'s not mate. Try again!');
         Sound.play('lose');
         setTimeout(function () {
-          G.state = G.history.pop();
-          renderPieces();
-          updateHud();
-        }, 900);
+          if (G.puzzle) startPuzzle(G.puzzle);
+          else {
+            G.state = G.history.pop();
+            G.san.pop();
+            renderMoveList();
+            renderPieces();
+            updateHud();
+          }
+        }, 1000);
       }
       return;
     }
@@ -472,6 +523,7 @@
     var newRating = null;
     if (G.mode === 'ai') {
       newRating = Opponents.recordResult(Opponents.effectiveRating(G.opponent), result);
+      Lessons.addXP(result === 1 ? 120 : result === 0.5 ? 40 : 15);
     }
     if (G.mode === 'ai' && G.lessonBoss && result === 1) {
       Lessons.setLessonStars('boss', 3);
@@ -519,11 +571,50 @@
     if (G.mode === 'ai') {
       btn(row, 'Opponents', function () { layer.innerHTML = ''; show('screen-opponents'); });
     }
+    if (G.san.length > 1) btn(row, 'Battle Report', openReview);
     btn(row, 'Menu', function () { layer.innerHTML = ''; show('screen-menu'); });
+  }
+
+  /* Post-battle review: static-eval swings flag blunders chess.com-style. */
+  function openReview() {
+    var states = G.history.concat([G.state]);
+    var evals = states.map(AI.evaluate);
+    var cells2 = [];
+    var blunders = 0;
+    for (var i = 0; i < G.san.length; i++) {
+      var mover = states[i].turn;
+      var swing = evals[i + 1] - evals[i];
+      var against = mover === 'w' ? -swing : swing;
+      var mark = against >= 250 ? '??' : against >= 120 ? '?!' : '';
+      if (mark === '??') blunders++;
+      cells2.push({ san: G.san[i], mark: mark });
+    }
+    var rows = '';
+    for (var j = 0; j < cells2.length; j += 2) {
+      var a = cells2[j], b = cells2[j + 1];
+      rows += '<tr><td class="rv-num">' + (j / 2 + 1) + '.</td>' +
+        '<td class="rv-mv' + (a.mark === '??' ? ' rv-bad' : '') + '">' + a.san + ' ' + a.mark + '</td>' +
+        '<td class="rv-mv' + (b && b.mark === '??' ? ' rv-bad' : '') + '">' + (b ? b.san + ' ' + b.mark : '') + '</td></tr>';
+    }
+    var layer = $('#modal-layer');
+    layer.innerHTML = '';
+    var ov = el('div', 'modal-overlay show', layer);
+    var box = el('div', 'modal review-modal', ov);
+    el('h2', null, box).textContent = 'Battle Report';
+    el('p', null, box).textContent = blunders
+      ? blunders + ' blunder' + (blunders > 1 ? 's' : '') + ' marked ?? — those moves bled the most.'
+      : 'No outright blunders. A disciplined slaughter.';
+    var sc = el('div', 'review-scroll', box);
+    sc.innerHTML = '<table class="review-table">' + rows + '</table>';
+    var row = el('div', 'modal-btns', box);
+    btn(row, 'Close', function () { layer.innerHTML = ''; show('screen-menu'); });
   }
 
   function lessonWin(stars) {
     G.over = true;
+    var xp = G.puzzle ? (G.puzzle.depth === 2 ? 60 : 40) : stars * 25;
+    Lessons.addXP(xp);
+    Lessons.touchStreak();
     Sound.play('win');
     setTimeout(function () { Sound.play('star'); }, 350);
     var layer = $('#modal-layer');
@@ -538,6 +629,7 @@
       s.textContent = '★';
       s.style.animationDelay = (i * 0.18) + 's';
     }
+    el('p', 'xp-line', box).textContent = '+' + xp + ' XP';
     var row = el('div', 'modal-btns', box);
     var next = nextItem();
     if (next) btn(row, 'Next ▸', function () { layer.innerHTML = ''; next(); });
@@ -584,7 +676,7 @@
   /* ---------- screen renderers ---------- */
 
   function renderMenu() {
-    $('#menu-rating').innerHTML = 'Rating: <b>' + Opponents.playerRating() + '</b>';
+    $('#menu-rating').innerHTML = 'Rating: <b>' + Opponents.playerRating() + '</b> \u00b7 \u26a1 ' + Lessons.getXP() + ' XP \u00b7 \ud83d\udd25 ' + Lessons.getStreak();
     var heroes = $('#menu-heroes');
     if (!heroes.dataset.built) {
       heroes.dataset.built = '1';
@@ -620,36 +712,53 @@
   }
 
   function renderAcademy() {
+    $('#academy-stats').innerHTML =
+      '<span class="chip">\u26a1 ' + Lessons.getXP() + ' XP</span>' +
+      '<span class="chip">\ud83d\udd25 ' + Lessons.getStreak() + ' day streak</span>' +
+      '<span class="chip">\ud83c\udfc6 ' + Opponents.playerRating() + '</span>';
     var path = $('#lesson-path');
     path.innerHTML = '';
-    Lessons.LESSONS.forEach(function (lesson, i) {
-      var stars = Lessons.lessonStars(lesson.id);
-      var open = Lessons.unlocked(i);
-      var node = el('div', 'lesson-node' + (open ? '' : ' locked') + (i % 2 ? ' alt' : ''), path);
-      var bubble = el('button', 'lesson-bubble', node);
-      bubble.innerHTML = open
-        ? Characters.svg(lesson.icon, 'w')
-        : '<span class="lock">🔒</span>';
-      if (open) bubble.addEventListener('click', function () { startLesson(lesson); });
-      var meta = el('div', 'lesson-meta', node);
-      el('div', 'lesson-name', meta).textContent = lesson.name;
-      var sr = el('div', 'lesson-stars', meta);
-      for (var s = 1; s <= 3; s++) {
-        el('span', 'star' + (s <= stars ? ' lit' : ''), sr).textContent = '★';
-      }
+    var flat = 0;
+    Lessons.UNITS.forEach(function (unit) {
+      var uh = el('div', 'unit-head', path);
+      uh.innerHTML = '<b>' + unit.name + '</b><span>' + unit.desc + '</span>';
+      unit.lessons.forEach(function (lesson, ui) {
+        var i = flat++;
+        var stars = Lessons.lessonStars(lesson.id);
+        var open = Lessons.unlocked(i);
+        var node = el('div', 'lesson-node' + (open ? '' : ' locked') + (ui % 2 ? ' alt' : ''), path);
+        var bubble = el('button', 'lesson-bubble', node);
+        bubble.innerHTML = open
+          ? Characters.svg(lesson.icon, 'w')
+          : '<span class="lock">\ud83d\udd12</span>';
+        if (open) bubble.addEventListener('click', function () { startLesson(lesson); });
+        var meta = el('div', 'lesson-meta', node);
+        el('div', 'lesson-name', meta).textContent = lesson.name;
+        var sr = el('div', 'lesson-stars', meta);
+        for (var s = 1; s <= 3; s++) {
+          el('span', 'star' + (s <= stars ? ' lit' : ''), sr).textContent = '\u2605';
+        }
+      });
     });
   }
 
   function renderPuzzles() {
     var grid = $('#puzzle-grid');
     grid.innerHTML = '';
-    Lessons.PUZZLES.forEach(function (pz, i) {
-      var card = el('button', 'puzzle-card' + (Lessons.puzzleDone(pz.id) ? ' done' : ''), grid);
-      el('div', 'pz-num', card).textContent = '#' + (i + 1);
-      el('div', 'pz-name', card).textContent = pz.name;
-      el('div', 'pz-check', card).textContent = Lessons.puzzleDone(pz.id) ? '✔' : 'Mate in 1';
-      card.addEventListener('click', function () { startPuzzle(pz); });
-    });
+    [['Mate in One', Lessons.PUZZLES], ['Mate in Two \u00b7 the enemy fights back', Lessons.PUZZLES2]]
+      .forEach(function (pack) {
+        var h = el('div', 'unit-head', grid);
+        h.innerHTML = '<b>' + pack[0] + '</b>';
+        var wrap = el('div', 'pz-grid', grid);
+        pack[1].forEach(function (pz, i) {
+          var card = el('button', 'puzzle-card' + (Lessons.puzzleDone(pz.id) ? ' done' : ''), wrap);
+          el('div', 'pz-num', card).textContent = '#' + (i + 1);
+          el('div', 'pz-name', card).textContent = pz.name;
+          el('div', 'pz-check', card).textContent = Lessons.puzzleDone(pz.id) ? '\u2714 solved'
+            : (pz.depth === 2 ? 'Mate in 2' : 'Mate in 1');
+          card.addEventListener('click', function () { startPuzzle(pz); });
+        });
+      });
   }
 
   /* ---------- toggles & buttons ---------- */
@@ -684,9 +793,11 @@
           if (was > now) G.captured[color].pop();
         });
         G.state = prev;
+        G.san.pop();
       }
       G.over = false;
       renderPieces();
+      renderMoveList();
       updateHud();
     });
 
