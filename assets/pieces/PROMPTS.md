@@ -20,7 +20,8 @@ the vector fallback for every piece, so add all 12 at once.
 
 - **Transparent background** (PNG with alpha) — this is essential
 - Portrait orientation, roughly 5:7 (e.g. 750×1050 or 1024×1434)
-- Full figure, feet at the bottom edge (they stand on the board tiles)
+- Full HUMAN figure — a warrior, not a chess-piece shape — feet at the
+  bottom edge (they stand directly on the board tiles, no base/plinth)
 - Figure facing slightly to the RIGHT (the game mirrors it when attacking left)
 - Consistent camera angle and lighting across all 12
 
@@ -31,11 +32,17 @@ Works in Midjourney, DALL-E/ChatGPT, Stable Diffusion, etc.
 
 **Style block (append to every prompt):**
 
-> full body war miniature of a medieval warrior, photorealistic dark
-> fantasy, grimdark, battle-worn tarnished armor with scratches and
-> grime, dramatic rim lighting, slightly low camera angle, standing in
-> an aggressive battle stance facing slightly right, isolated on a
-> transparent background, no ground shadow, centered, 8k detail
+> full body photograph-style render of a real medieval warrior, a
+> living person in realistic human proportions, photorealistic dark
+> fantasy, grimdark, battle-worn tarnished armor with scratches, dirt
+> and dried blood, dramatic rim lighting, slightly low camera angle,
+> standing on the ground in an aggressive battle stance facing slightly
+> right, head to toe visible, isolated on a transparent background,
+> no pedestal, no base, NOT a chess piece, NOT a figurine or statue,
+> no ground shadow, centered, 8k detail
+
+If your generator supports negative prompts, add:
+`chess piece, figurine, statue, toy, pedestal, base, plinth, cartoon`
 
 **Per piece — WHITE army** (steel & deep blue cloth):
 
